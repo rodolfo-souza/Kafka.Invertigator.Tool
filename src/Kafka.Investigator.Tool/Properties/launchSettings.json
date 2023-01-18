@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Kafka.Investigator.Tool": {
+      "commandName": "Project",
+      "commandLineArgs": "consumer-start -t cards.credit-card.invoice -g challenge-limit.invoice-consumer"
+    }
+  }
+}
