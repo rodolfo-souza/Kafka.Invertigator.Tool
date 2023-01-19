@@ -61,18 +61,34 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     if (usingSchemaRegistry && (isKeyAvro || isValueAvro))
                         PrintAvroSchemas(schemaRegistry, keySchemaId, valueSchemaId);
 
-                    UserInteractionsHelper.WriteWarning("[???] Do you want to COMMIT message? Y/N");
-                    if (Console.ReadLine().ToUpper() == "Y")
+                    var userOption = RequestUserNextAction();
+                    bool stopConsumer = false;
+
+                    switch (userOption)
                     {
-                        UserInteractionsHelper.WriteWarning("Confirm COMMIT? Y/N");
-                        if (Console.ReadLine().ToUpper() == "Y")
-                        {
-                            consumer.Commit(consumerResult);
-                            UserInteractionsHelper.WriteInformation("Message commited.");
-                        }
+                        case 1:
+                            UserInteractionsHelper.WriteWarning("Confirm COMMIT? Y/N");
+                            if (Console.ReadLine().ToUpper() == "Y")
+                            {
+                                consumer.Commit(consumerResult);
+                                UserInteractionsHelper.WriteInformation("Message commited.");
+                            }
+                            break;
+                        case 2:
+                            // TODO: Impplementar 
+                            UserInteractionsHelper.WriteError("NOT IMPLEMENTED");
+                            break;
+                        case 3:
+                            continue;
+                        case 4:
+                            stopConsumer = true;
+                            break;
                     }
 
-                    UserInteractionsHelper.WriteInformation("Do you want to read next message? Y/N");
+                    if (stopConsumer)
+                        break;
+
+                    UserInteractionsHelper.WriteInformation("Continue consuming? Y/N");
                     if (Console.ReadLine().ToUpper() != "Y")
                         break;
                 }
@@ -227,5 +243,29 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 return "fail";
             }
         }
+
+        private static int RequestUserNextAction()
+        {
+            var validOptions = new[] { "1", "2", "3", "4" };
+
+            while(true)
+            {
+                UserInteractionsHelper.WriteWarning("What do you want to do with message?");
+                UserInteractionsHelper.WriteWarning("1 - Commit message (be careful!)");
+                UserInteractionsHelper.WriteWarning("3 - Export message (save as file)");
+                UserInteractionsHelper.WriteWarning("3 - Continue consuming (without commit)");
+                UserInteractionsHelper.WriteWarning("4 - Finish consumer");
+
+                var userOption = Console.ReadLine();
+
+                if (validOptions.Contains(userOption))
+                    return int.Parse(userOption);
+
+                UserInteractionsHelper.WriteError($"Invalid option: [{userOption}]");
+            }
+            
+        }
+
+        
     }
 }

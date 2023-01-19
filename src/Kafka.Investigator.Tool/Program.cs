@@ -12,6 +12,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
 
+PrintPresentation();
+
 var parsedValue = Parser.Default.ParseArguments<ConnectionAddOption, 
                                                 ConnectionListOption,
                                                 ConnectionDelOption,
@@ -61,4 +63,28 @@ static async Task ExecuteOption(object options, ServiceProvider serviceProvider)
         throw new Exception("MediatR was not configured properly.");
 
     await mediator.Publish(options);
+}
+
+static void PrintPresentation()
+{
+    var text = @"
+
+██╗░░██╗░█████╗░███████╗██╗░░██╗░█████╗░
+██║░██╔╝██╔══██╗██╔════╝██║░██╔╝██╔══██╗
+█████═╝░███████║█████╗░░█████═╝░███████║
+██╔═██╗░██╔══██║██╔══╝░░██╔═██╗░██╔══██║
+██║░╚██╗██║░░██║██║░░░░░██║░╚██╗██║░░██║
+╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░░░░╚═╝░░╚═╝╚═╝░░╚═╝
+
+██╗███╗░░██╗██╗░░░██╗███████╗░██████╗████████╗██╗░██████╗░░█████╗░████████╗░█████╗░██████╗░
+██║████╗░██║██║░░░██║██╔════╝██╔════╝╚══██╔══╝██║██╔════╝░██╔══██╗╚══██╔══╝██╔══██╗██╔══██╗
+██║██╔██╗██║╚██╗░██╔╝█████╗░░╚█████╗░░░░██║░░░██║██║░░██╗░███████║░░░██║░░░██║░░██║██████╔╝
+██║██║╚████║░╚████╔╝░██╔══╝░░░╚═══██╗░░░██║░░░██║██║░░╚██╗██╔══██║░░░██║░░░██║░░██║██╔══██╗
+██║██║░╚███║░░╚██╔╝░░███████╗██████╔╝░░░██║░░░██║╚██████╔╝██║░░██║░░░██║░░░╚█████╔╝██║░░██║
+╚═╝╚═╝░░╚══╝░░░╚═╝░░░╚══════╝╚═════╝░░░░╚═╝░░░╚═╝░╚═════╝░╚═╝░░╚═╝░░░╚═╝░░░░╚════╝░╚═╝░░╚═╝
+";
+    var beforeColor = Console.ForegroundColor;
+    Console.ForegroundColor = ConsoleColor.Blue;
+    Console.WriteLine(text);
+    Console.ForegroundColor = beforeColor;
 }
