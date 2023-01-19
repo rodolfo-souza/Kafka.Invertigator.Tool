@@ -43,7 +43,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 {
                     PrintConsumerCurrentAssignment(consumer);
 
-                    UserInteractionsHelper.WriteDebug("Waiting for new messages (timeout 10s)...");
+                    UserInteractionsHelper.WriteDebug($"Waiting for new messages from topic [{consumerStartRequest.TopicName}] (timeout 10s)...");
 
                     var consumerResult = consumer.Consume(TimeSpan.FromSeconds(10));
 
