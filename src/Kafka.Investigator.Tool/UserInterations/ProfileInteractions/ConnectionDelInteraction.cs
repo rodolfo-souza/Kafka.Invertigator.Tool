@@ -29,8 +29,8 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
                     return;
                 }
 
-                UserInteractionsHelper.WriteWarning($"Confirm EXCLUSION of connection [{profileDelOptions.ConnectionName}]? Y/N");
-                if (Console.ReadLine().ToUpper() != "Y")
+                var response = UserInteractionsHelper.RequestYesNoResponse($"Confirm EXCLUSION of connection [{profileDelOptions.ConnectionName}]?");
+                if (response != "Y")
                     return;
 
                 _profileRepository.DelConnection(existingConnection);

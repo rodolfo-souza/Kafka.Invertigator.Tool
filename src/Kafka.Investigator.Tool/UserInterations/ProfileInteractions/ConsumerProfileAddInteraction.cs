@@ -22,6 +22,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
         {
             try
             {
+                UserInteractionsHelper.WriteInformation("Add Consumer Profile");
                 var consumerName = UserInteractionsHelper.RequestInput<string>("Consumer Name (don't use spaces)");
                 var topicName = UserInteractionsHelper.RequestInput<string>("Topic Name");
                 var groupId = UserInteractionsHelper.RequestInput<string>("GroupId");
@@ -46,8 +47,8 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
 
                 if (existingConsumer != null)
                 {
-                    UserInteractionsHelper.WriteWarning($"Already exists a consumer with name [{consumerName}]. Do you want to replace? Y/N");
-                    if (Console.ReadLine().ToUpper() != "Y")
+                    var response = UserInteractionsHelper.RequestYesNoResponse($"Already exists a consumer with name [{consumerName}]. Do you want to replace?");
+                    if (response != "Y")
                         return;
                 }
 

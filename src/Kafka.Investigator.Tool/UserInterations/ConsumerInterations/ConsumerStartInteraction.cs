@@ -31,7 +31,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 var consumer = CreateConsumer(consumerStartRequest);
                 var usingSchemaRegistry = TryCreateSchemaRegistry(consumerStartRequest, out ISchemaRegistryClient schemaRegistry);
 
-                if (UserInteractionsHelper.RequestUserResponse("Confirm consumer start? Y/N", ConsoleColor.Yellow) != "Y")
+                if (UserInteractionsHelper.RequestYesNoResponse("Confirm consumer start?") != "Y")
                 { 
                     UserInteractionsHelper.WriteWarning("Operation aborted.");
                     return;
@@ -70,20 +70,19 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
                     switch (userOption)
                     {
-                        case 1:
-                            if (UserInteractionsHelper.RequestUserResponse("Confirm COMMIT? Y/N", ConsoleColor.Yellow) == "Y")
+                        case 1: // Commit
+                            if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT?") == "Y")
                             {
                                 consumer.Commit(consumerResult);
                                 UserInteractionsHelper.WriteSuccess("Message commited.");
                             }
                             break;
-                        case 2:
-                            // TODO: Impplementar 
-                            UserInteractionsHelper.WriteError("NOT IMPLEMENTED");
+                        case 2: // Save Message
+                            SaveMessage(consumerResult.Message);
                             break;
-                        case 3:
+                        case 3: // Continue
                             continue;
-                        case 4:
+                        case 4: // Stop Consumer
                             stopConsumer = true;
                             break;
                     }
@@ -91,7 +90,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     if (stopConsumer)
                         break;
 
-                    if (UserInteractionsHelper.RequestUserResponse("Continue consuming? Y/N", ConsoleColor.Blue) != "Y")
+                    if (UserInteractionsHelper.RequestYesNoResponse("Continue consuming?") != "Y")
                         break;
                 }
 
@@ -256,6 +255,44 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             
         }
 
-        
+        private static void SaveMessage(Message<byte[], byte[]> message)
+        {
+            var stopAsk = false;
+            while(!stopAsk)
+            {
+                try
+                {
+                    var applicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    var directory = UserInteractionsHelper.RequestInput<string>($"Inform path (default {applicationData})");
+
+                    if (string.IsNullOrEmpty(directory))
+                        directory = applicationData;
+
+                    if (!Directory.Exists(directory))
+                        Directory.CreateDirectory(directory);
+
+                    var filePrefix = UserInteractionsHelper.RequestInput<string>("Inform file prefix (ex.: prefix 'abc' will create 'abc-key' and 'abc-value' files)");
+
+                    var keyFilePath = Path.Combine(directory, filePrefix, "-key");
+                    var valueFilePath = Path.Combine(directory, filePrefix, "-value");
+
+                    File.WriteAllBytes(keyFilePath, message.Key);
+                    File.WriteAllBytes(valueFilePath, message.Value);
+
+                    UserInteractionsHelper.WriteSuccess($"Message exported sucessfully to: ");
+                    UserInteractionsHelper.WriteSuccess(keyFilePath);
+                    UserInteractionsHelper.WriteSuccess(valueFilePath);
+
+                    stopAsk = true;
+                }
+                catch (Exception ex)
+                {
+                    UserInteractionsHelper.WriteError(ex.Message);
+
+                    if (UserInteractionsHelper.RequestYesNoResponse("Try again?") != "Y")
+                        stopAsk = true;
+                }
+            }
+        }
     }
 }

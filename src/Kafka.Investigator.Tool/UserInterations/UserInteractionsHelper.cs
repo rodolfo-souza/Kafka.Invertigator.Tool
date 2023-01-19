@@ -25,7 +25,7 @@ namespace Kafka.Investigator.Tool.UserInterations
 
         public static string RequestUserResponse(string question, ConsoleColor? color = null, bool responseToUpper = true)
         {
-            WriteWithColor(question, color);
+            WriteWithColor(question, color: color, writeLine: false);
             var userResponse = Console.ReadLine();
 
             if (responseToUpper)
@@ -33,7 +33,12 @@ namespace Kafka.Investigator.Tool.UserInterations
             
             return userResponse;
         }
-        
+
+        public static string RequestYesNoResponse(string question, ConsoleColor? color = ConsoleColor.Yellow, bool responseToUpper = true)
+        {
+            return RequestUserResponse($"{question} [Y/N]: ", color, responseToUpper);
+        }
+
         public static void WriteDebug(string log)
         {
             Write(log);
@@ -59,23 +64,27 @@ namespace Kafka.Investigator.Tool.UserInterations
             WriteWithColor(log, ConsoleColor.Red);
         }
 
-        public static void WriteWithColor(string log, ConsoleColor? color = null)
+        public static void WriteWithColor(string log, ConsoleColor? color = null, bool writeLine = true, bool includeTime = true)
         {
             var beforeColor = Console.ForegroundColor;
             Console.ForegroundColor = color ?? beforeColor;
-            Write(log);
+            Write(log, includeTime, writeLine);
             Console.ForegroundColor = beforeColor;
         }
 
         public static void WriteEmptyLine() => Write("", includeTime: false);
 
-        private static void Write(string log, bool includeTime = true)
+        private static void Write(string log, bool includeTime = true, bool writeLine = true)
         {
             var time = includeTime ? DateTime.Now.ToString("HH:mm:ss") : "";
+
             if (includeTime)
-                Console.WriteLine($"{time} > {log}");
+                log = $"{time} > {log}";
+
+            if (writeLine)
+                Console.WriteLine(log);
             else
-                Console.WriteLine($"{log}");
+                Console.Write(log);
         }
 
         private static bool TryConvert<T>(string value, out T? convertedValue)

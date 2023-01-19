@@ -29,7 +29,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
                     return;
                 }
 
-                if (UserInteractionsHelper.RequestUserResponse($"Confirm EXCLUSION of profile [{options.ConsumerProfileName}]? Y/N", color: ConsoleColor.Yellow) != "Y")
+                if (UserInteractionsHelper.RequestYesNoResponse($"Confirm EXCLUSION of profile [{options.ConsumerProfileName}]?", color: ConsoleColor.Yellow) != "Y")
                     return;
 
                 _profileRepository.DelConsumerProfile(existingConsumerProfile);

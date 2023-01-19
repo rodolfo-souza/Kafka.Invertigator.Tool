@@ -21,9 +21,10 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
         {
             try
             {
-                var schemaRegistryName = UserInteractionsHelper.RequestInput<string>("SchemaRegistry Name");
+                UserInteractionsHelper.WriteInformation("Add Schema Registry");
+                var schemaRegistryName = UserInteractionsHelper.RequestInput<string>("Schema Registry Name");
                 var setAsDefaultSchemaRegistry = UserInteractionsHelper.RequestInput<bool>("Set as default schema registry? true/false");
-                var url = UserInteractionsHelper.RequestInput<string>("SchemaRegistry Url");
+                var url = UserInteractionsHelper.RequestInput<string>("Schema Registry Url");
                 var userName = UserInteractionsHelper.RequestInput<string>("UserName");
                 var password = UserInteractionsHelper.RequestInput<string>("Password");
 
@@ -35,8 +36,8 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
 
                 if (existingSchema != null)
                 {
-                    UserInteractionsHelper.WriteWarning($"Already exists a SchemaRegistry with name [{schemaRegistryName}]. Do you want to replace? Y/N");
-                    if (Console.ReadLine().ToUpper() != "Y")
+                    var response = UserInteractionsHelper.RequestYesNoResponse($"Already exists a Schema Registry with name [{schemaRegistryName}]. Do you want to replace?");
+                    if (response != "Y")
                         return;
                 }
 

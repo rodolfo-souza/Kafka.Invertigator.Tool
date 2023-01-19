@@ -22,6 +22,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
         {
             try
             {
+                UserInteractionsHelper.WriteInformation("Add Connection");
                 var connectionName = UserInteractionsHelper.RequestInput<string>("Connection Name (don't use spaces)");
                 var setAsDefaultConnection = UserInteractionsHelper.RequestInput<bool>("Set as default connection? true/false");
                 var broker = UserInteractionsHelper.RequestInput<string>("Broker");
@@ -40,8 +41,8 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
 
                 if (existingProfile != null)
                 {
-                    UserInteractionsHelper.WriteWarning($"Already exists a connection with name [{connectionName}]. Do you want to replace? Y/N");
-                    if (Console.ReadLine().ToUpper() != "Y")
+                    var response = UserInteractionsHelper.RequestYesNoResponse($"Already exists a connection with name [{connectionName}]. Do you want to replace?");
+                    if (response != "Y")
                         return;
                 }
 
