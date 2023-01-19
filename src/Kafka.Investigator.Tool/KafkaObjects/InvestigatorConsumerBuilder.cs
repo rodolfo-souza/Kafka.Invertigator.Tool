@@ -34,7 +34,7 @@ namespace Kafka.Investigator.Tool.KafkaObjects
                 SaslPassword = connectionProfile.Password,
 
                 // ConsumeStartOptions
-                GroupId = consumeStartOption.GrouptId,
+                GroupId = consumeStartOption.GroupId,
                 AutoOffsetReset = consumeStartOption.AutoOffset,
 
                 // Hard code
@@ -51,7 +51,11 @@ namespace Kafka.Investigator.Tool.KafkaObjects
             };
 
             var consumerBuilder = new ConsumerBuilder<byte[], byte[]>(consumerConfig)
-                                  .SetErrorHandler((message, error) => UserInteractionsHelper.WriteError(error.Reason));
+                                  .SetErrorHandler((message, error) => UserInteractionsHelper.WriteError(error.Reason))
+                                  .SetPartitionsRevokedHandler((c, partitions) =>
+                                  {
+                                      UserInteractionsHelper.WriteWarning($"[ConsumerWarning] Group rebalancing occurred.");
+                                  });
 
             var consumer = consumerBuilder.Build();
 

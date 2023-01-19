@@ -27,7 +27,7 @@ namespace Kafka.Investigator.Tool.UserInterations
         {
             var beforeColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine(log);
+            WriteLine(log);
             Console.ForegroundColor = beforeColor;
         }
 
@@ -35,7 +35,7 @@ namespace Kafka.Investigator.Tool.UserInterations
         {
             var beforeColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine(log);
+            WriteLine(log);
             Console.ForegroundColor = beforeColor;
         }
 
@@ -43,7 +43,7 @@ namespace Kafka.Investigator.Tool.UserInterations
         {
             var beforeColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(log);
+            WriteLine(log);
             Console.ForegroundColor = beforeColor;
         }
 
@@ -51,13 +51,19 @@ namespace Kafka.Investigator.Tool.UserInterations
         {
             var beforeColor = Console.ForegroundColor;
             Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine(log);
+            WriteLine(log);
             Console.ForegroundColor = beforeColor;
         }
 
         public static void WriteDebug(string log)
         {
-            Console.WriteLine(log);
+            WriteLine(log);
+        }
+
+        private static void WriteLine(string log, bool includeTime = true)
+        {
+            var time = includeTime ? DateTime.Now.ToString("HH:mm:ss") : "";
+            Console.WriteLine($"{time} > {log}");
         }
 
         private static bool TryConvert<T>(string value, out T? convertedValue)
@@ -79,5 +85,7 @@ namespace Kafka.Investigator.Tool.UserInterations
                 return false;
             }
         }
+
+        
     }
 }

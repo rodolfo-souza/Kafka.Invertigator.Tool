@@ -16,7 +16,7 @@ namespace Kafka.Investigator.Tool.Options.ConsumerOptions
         public string TopicName { get; set; }
 
         [Option('g', "group-id", Required = true, HelpText = "Group Id (identifier of consumer in Kafka server)")]
-        public string GrouptId { get; set; }
+        public string GroupId { get; set; }
 
         [Option('o', "offset", Required = false, Default = AutoOffsetReset.Earliest, HelpText = "AutoOffsetReset. Enter 'Latest' or 'Earliest'. Not applicable for consumer-group with existing offset.")]
         public AutoOffsetReset AutoOffset { get; set; }
