@@ -29,8 +29,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
                     return;
                 }
 
-                UserInteractionsHelper.WriteWarning($"Confirm EXCLUSION of profile [{options.SchemaRegistryName}]? Y/N");
-                if (Console.ReadLine().ToUpper() != "Y")
+                if (UserInteractionsHelper.RequestUserResponse($"Confirm EXCLUSION of profile [{options.SchemaRegistryName}]? Y/N", color: ConsoleColor.Yellow) != "Y")
                     return;
 
                 _profileRepository.DelSchemaRegistry(existingSchemaRegistry);

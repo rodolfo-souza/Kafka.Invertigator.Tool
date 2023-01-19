@@ -51,10 +51,8 @@ void ConfigureServices(IServiceCollection services)
     services.AddSingleton<ProfileRepository>();
     services.AddSingleton<ConnectionAddInteraction>();
     services.AddSingleton<ConnectionDelInteraction>();
-    services.AddSingleton<ConnectionListInteraction>();
     services.AddSingleton<SchemaRegistryAddInteraction>();
     services.AddSingleton<SchemaRegistryDelInteraction>();
-    services.AddSingleton<SchemaRegistryListInteraction>();
     services.AddSingleton<ConsumerStartInteraction>();
     services.AddSingleton<ConsumerProfileAddInteraction>();
 }

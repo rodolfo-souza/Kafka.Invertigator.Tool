@@ -21,22 +21,18 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
                                            INotificationHandler<ConsumerProfileAddOptions>,
                                            INotificationHandler<ConsumerProfileListOptions>
     {
-        private readonly ConnectionAddInteraction _profileAddInteraction;
-        private readonly ConnectionDelInteraction _profileDelInteraction;
-        private readonly ConnectionListInteraction _profileListInteraction;
+        private readonly ConnectionAddInteraction _connectionAddInteraction;
+        private readonly ConnectionDelInteraction _connectionDelInteraction;
         private readonly SchemaRegistryAddInteraction _schemaRegistryAddInteraction;
-        private readonly SchemaRegistryListInteraction _schemaRegistryListInteraction;
         private readonly SchemaRegistryDelInteraction _schemaRegistryDelInteraction;
         private readonly ConsumerProfileAddInteraction _consumerProfileAddInteraction;
         private readonly ProfileRepository _profileRepository;
 
-        public ProfileOptionsHandler(ConnectionAddInteraction profileAddInteraction, ConnectionDelInteraction profileDelInteraction, ConnectionListInteraction profileListInteraction, SchemaRegistryAddInteraction schemaRegistryAddInteraction, SchemaRegistryListInteraction schemaRegistryListInteraction, SchemaRegistryDelInteraction schemaRegistryDelInteraction, ConsumerProfileAddInteraction consumerProfileAddInteraction, ProfileRepository profileRepository)
+        public ProfileOptionsHandler(ConnectionAddInteraction profileAddInteraction, ConnectionDelInteraction profileDelInteraction, SchemaRegistryAddInteraction schemaRegistryAddInteraction, SchemaRegistryDelInteraction schemaRegistryDelInteraction, ConsumerProfileAddInteraction consumerProfileAddInteraction, ProfileRepository profileRepository)
         {
-            _profileAddInteraction = profileAddInteraction;
-            _profileDelInteraction = profileDelInteraction;
-            _profileListInteraction = profileListInteraction;
+            _connectionAddInteraction = profileAddInteraction;
+            _connectionDelInteraction = profileDelInteraction;
             _schemaRegistryAddInteraction = schemaRegistryAddInteraction;
-            _schemaRegistryListInteraction = schemaRegistryListInteraction;
             _schemaRegistryDelInteraction = schemaRegistryDelInteraction;
             _consumerProfileAddInteraction = consumerProfileAddInteraction;
             _profileRepository = profileRepository;
@@ -44,21 +40,28 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
 
         public Task Handle(ConnectionAddOptions profileAddOptions, CancellationToken cancellationToken)
         {
-            _profileAddInteraction.AddConnection();
+            _connectionAddInteraction.AddConnection();
 
             return Task.CompletedTask;
         }
 
         public Task Handle(ConnectionDelOptions connectionDelOptions, CancellationToken cancellationToken)
         {
-            _profileDelInteraction.DelConnection(connectionDelOptions);
+            _connectionDelInteraction.DelConnection(connectionDelOptions);
 
             return Task.CompletedTask;
         }
 
         public Task Handle(ConnectionListOptions connectionListOptions, CancellationToken cancellationToken)
         {
-            _profileListInteraction.ListConnections();
+            var connections = _profileRepository.GetConnections();
+
+            var consoleTable = new ConsoleTable("Connection", "Default", "Broker", "Username", "SaslMechanism", "SecurityProtocol", "EnableSslCertificateVerification");
+
+            foreach (var p in connections)
+                consoleTable.AddRow(p.ConnectionName, p.Default == true ? "***" : "", p.Broker, p.UserName, p.SaslMechanism, p.SecurityProtocol, p.EnableSslCertificateVerification);
+
+            consoleTable.WriteWithOptions("Connections List");
 
             return Task.CompletedTask;
         }
@@ -72,7 +75,14 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
 
         public Task Handle(SchemaRegistryListOptions schemaRegistryListOptions, CancellationToken cancellationToken)
         {
-            _schemaRegistryListInteraction.ListSchemaRegistries();
+            var schemaRegistries = _profileRepository.GetSchemaRegistries();
+
+            var consoleTable = new ConsoleTable("Schema Name", "Default", "Url", "Username");
+
+            foreach (var s in schemaRegistries)
+                consoleTable.AddRow(s.SchemaRegistryName, s.Default == true ? "***" : "", s.Url, s.UserName);
+
+            consoleTable.WriteWithOptions("Schema Registry List");
 
             return Task.CompletedTask;
         }
