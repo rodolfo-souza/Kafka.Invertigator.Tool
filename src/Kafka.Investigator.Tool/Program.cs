@@ -14,7 +14,7 @@ using System.Reflection;
 
 PrintPresentation();
 
-var parsedValue = Parser.Default.ParseArguments<ConnectionAddOptions, 
+var parsedValue = Parser.Default.ParseArguments<ConnectionAddOptions,
                                                 ConnectionListOptions,
                                                 ConnectionDelOptions,
                                                 SchemaRegistryAddOptions,
@@ -22,6 +22,7 @@ var parsedValue = Parser.Default.ParseArguments<ConnectionAddOptions,
                                                 SchemaRegistryDelOptions,
                                                 ConsumerProfileAddOptions,
                                                 ConsumerProfileListOptions,
+                                                ConsumerProfileDelOptions,
                                                 ConsumerProfileStartOptions,
                                                 ConsumerStartOptions>(args);
 
@@ -53,8 +54,9 @@ void ConfigureServices(IServiceCollection services)
     services.AddSingleton<ConnectionDelInteraction>();
     services.AddSingleton<SchemaRegistryAddInteraction>();
     services.AddSingleton<SchemaRegistryDelInteraction>();
-    services.AddSingleton<ConsumerStartInteraction>();
     services.AddSingleton<ConsumerProfileAddInteraction>();
+    services.AddSingleton<ConsumerProfileDelInteraction>();
+    services.AddSingleton<ConsumerStartInteraction>();
 }
 
 static async Task ExecuteOption(object options, ServiceProvider serviceProvider)

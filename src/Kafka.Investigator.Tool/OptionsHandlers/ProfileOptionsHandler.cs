@@ -19,22 +19,25 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
                                            IRequestHandler<SchemaRegistryListOptions>,
                                            IRequestHandler<SchemaRegistryDelOptions>,
                                            IRequestHandler<ConsumerProfileAddOptions>,
-                                           IRequestHandler<ConsumerProfileListOptions>
+                                           IRequestHandler<ConsumerProfileListOptions>,
+                                           IRequestHandler<ConsumerProfileDelOptions>
     {
         private readonly ConnectionAddInteraction _connectionAddInteraction;
         private readonly ConnectionDelInteraction _connectionDelInteraction;
         private readonly SchemaRegistryAddInteraction _schemaRegistryAddInteraction;
         private readonly SchemaRegistryDelInteraction _schemaRegistryDelInteraction;
         private readonly ConsumerProfileAddInteraction _consumerProfileAddInteraction;
+        private readonly ConsumerProfileDelInteraction _consumerProfileDelInteraction;
         private readonly ProfileRepository _profileRepository;
 
-        public ProfileOptionsHandler(ConnectionAddInteraction profileAddInteraction, ConnectionDelInteraction profileDelInteraction, SchemaRegistryAddInteraction schemaRegistryAddInteraction, SchemaRegistryDelInteraction schemaRegistryDelInteraction, ConsumerProfileAddInteraction consumerProfileAddInteraction, ProfileRepository profileRepository)
+        public ProfileOptionsHandler(ConnectionAddInteraction connectionAddInteraction, ConnectionDelInteraction connectionDelInteraction, SchemaRegistryAddInteraction schemaRegistryAddInteraction, SchemaRegistryDelInteraction schemaRegistryDelInteraction, ConsumerProfileAddInteraction consumerProfileAddInteraction, ConsumerProfileDelInteraction consumerProfileDelInteraction, ProfileRepository profileRepository)
         {
-            _connectionAddInteraction = profileAddInteraction;
-            _connectionDelInteraction = profileDelInteraction;
+            _connectionAddInteraction = connectionAddInteraction;
+            _connectionDelInteraction = connectionDelInteraction;
             _schemaRegistryAddInteraction = schemaRegistryAddInteraction;
             _schemaRegistryDelInteraction = schemaRegistryDelInteraction;
             _consumerProfileAddInteraction = consumerProfileAddInteraction;
+            _consumerProfileDelInteraction = consumerProfileDelInteraction;
             _profileRepository = profileRepository;
         }
 
@@ -111,6 +114,13 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
                 consoleTable.AddRow(c.ConsumerName, c.ConnectionName, c.TopicName, c.GroupId, c.AutoOffsetReset, c.UseSchemaRegistry, c.SchemaRegistryName);
 
             consoleTable.WriteWithOptions("Consumer Profile List");
+
+            return Task.FromResult(Unit.Value);
+        }
+
+        public Task<Unit> Handle(ConsumerProfileDelOptions consumerProfileDelOptions, CancellationToken cancellationToken)
+        {
+            _consumerProfileDelInteraction.DelConsumerProfile(consumerProfileDelOptions);
 
             return Task.FromResult(Unit.Value);
         }

@@ -125,7 +125,7 @@ namespace Kafka.Investigator.Tool.ProfileManaging
 
         public void DelConsumerProfile(ConsumerProfile consumerProfile)
         {
-            var existingConsumerProfile = GetSchemaRegistry(consumerProfile.ConsumerName);
+            var existingConsumerProfile = GetConsumerProfile(consumerProfile.ConsumerName);
 
             if (existingConsumerProfile == null)
                 return;
