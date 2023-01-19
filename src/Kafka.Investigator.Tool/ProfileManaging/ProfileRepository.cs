@@ -20,7 +20,7 @@ namespace Kafka.Investigator.Tool.ProfileManaging
         #region Connection
         public ConnectionProfile? GetConnection(string connectionName)
         {
-            return _profileSet.Connections.FirstOrDefault(p => p.ConnectionName == connectionName);
+            return _profileSet.Connections.FirstOrDefault(p => p.ConnectionName.ToUpper() == connectionName.ToUpper());
         }
 
         public IReadOnlyList<ConnectionProfile> GetConnections()
@@ -59,7 +59,7 @@ namespace Kafka.Investigator.Tool.ProfileManaging
         #region SchemaRegistry
         public SchemaRegistryProfile? GetSchemaRegistry(string schemaName)
         {
-            return _profileSet.SchemaRegistries.FirstOrDefault(s => s.SchemaRegistryName == schemaName);
+            return _profileSet.SchemaRegistries.FirstOrDefault(s => s.SchemaRegistryName.ToUpper() == schemaName.ToUpper());
         }
 
         public IReadOnlyList<SchemaRegistryProfile> GetSchemaRegistries()
@@ -100,7 +100,7 @@ namespace Kafka.Investigator.Tool.ProfileManaging
 
         public ConsumerProfile? GetConsumerProfile(string consumerName)
         {
-            return _profileSet.ConsumerProfiles.FirstOrDefault(s => s.ConsumerName == consumerName);
+            return _profileSet.ConsumerProfiles.FirstOrDefault(s => s.ConsumerName.ToUpper() == consumerName.ToUpper());
         }
 
         public IReadOnlyList<ConsumerProfile> GetConsumerProfiles()
