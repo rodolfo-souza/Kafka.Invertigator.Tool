@@ -1,4 +1,6 @@
 ﻿using Confluent.Kafka;
+using Kafka.Investigator.Tool.Options.ConsumerOptions;
+using Kafka.Investigator.Tool.UserInterations.ConsumerInterations;
 using Kafka.Investigator.Tool.Util;
 using System;
 using System.Collections.Generic;
@@ -27,7 +29,7 @@ namespace Kafka.Investigator.Tool.ProfileManaging
             TopicName = topicName;
             GroupId = groupId;
             ConnectionName = connectionName;
-            AutoOffsetReset = autoOffsetReset ?? Confluent.Kafka.AutoOffsetReset.Earliest;
+            AutoOffsetReset = autoOffsetReset ?? AutoOffsetReset.Earliest;
             UseSchemaRegistry = useSchemaRegistry ?? true;
             SchemaRegistryName = schemaRegistryName;
         }
@@ -37,8 +39,8 @@ namespace Kafka.Investigator.Tool.ProfileManaging
         public string TopicName { get; set; }
         public string GroupId { get; set; }
         public string ConnectionName { get; set; }
-        public AutoOffsetReset? AutoOffsetReset { get; set; }
-        public bool? UseSchemaRegistry { get; set; }
+        public AutoOffsetReset AutoOffsetReset { get; set; }
+        public bool UseSchemaRegistry { get; set; }
         public string? SchemaRegistryName { get; set; }
 
         public void Validate()

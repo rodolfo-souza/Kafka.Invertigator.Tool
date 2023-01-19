@@ -12,10 +12,13 @@ namespace Kafka.Investigator.Tool.Options.ConsumerOptions
     [Verb("consumer-start", HelpText = "Run a consumer.")]
     internal class ConsumeStartOption : INotification
     {
-        [Option('t', "topic", Required = true, HelpText = "Topic name")]
+        [Option('p', "consumer-profile", HelpText = "Consumer profile that contains all other parameters. If informed, other parameters will be ignored.")]
+        public string ConsumerProfileName { get; set; }
+
+        [Option('t', "topic", Required = false, HelpText = "Topic name")]
         public string TopicName { get; set; }
 
-        [Option('g', "group-id", Required = true, HelpText = "Group Id (identifier of consumer in Kafka server)")]
+        [Option('g', "group-id", Required = false, HelpText = "Group Id (identifier of consumer in Kafka server)")]
         public string GroupId { get; set; }
         
         [Option('c', "connection", Required = false, HelpText = "Connection that will be used. If empty, the default connection will be used. View list using connection-list command.")]

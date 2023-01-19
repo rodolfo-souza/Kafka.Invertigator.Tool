@@ -1,4 +1,5 @@
 ﻿using Confluent.SchemaRegistry;
+using ConsoleTables;
 using Kafka.Investigator.Tool.Options.ConsumerOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
 using Kafka.Investigator.Tool.UserInterations;
@@ -19,9 +20,9 @@ namespace Kafka.Investigator.Tool.KafkaObjects
             _profileRepository = profileRepository;
         }
 
-        public ISchemaRegistryClient BuildSchemaRegistryClient(ConsumeStartOption consumeStartOptions)
+        public ISchemaRegistryClient BuildSchemaRegistryClient(string? schemaRegistryName = null)
         {
-            var schemaProfile = GetSchemaRegistryProfile(consumeStartOptions);
+            var schemaProfile = GetSchemaRegistryProfile(schemaRegistryName);
 
             var schemaRegistryConfig = new SchemaRegistryConfig
             {
@@ -30,20 +31,22 @@ namespace Kafka.Investigator.Tool.KafkaObjects
                 Url = schemaProfile.Url,
                 BasicAuthUserInfo = $"{schemaProfile.UserName}:{schemaProfile.Password}"
             };
+            
+            PrintSchemaRegistryParameters(schemaProfile);
 
             return new CachedSchemaRegistryClient(schemaRegistryConfig);
         }
 
-        private SchemaRegistryProfile GetSchemaRegistryProfile(ConsumeStartOption consumeStartOptions)
+        private SchemaRegistryProfile GetSchemaRegistryProfile(string? schemaRegistryName)
         {
             SchemaRegistryProfile schemaRegistryProfile = null;
 
-            if (!string.IsNullOrEmpty(consumeStartOptions.SchemaRegistryName))
+            if (!string.IsNullOrEmpty(schemaRegistryName))
             {
-                schemaRegistryProfile = _profileRepository.GetSchemaRegistry(consumeStartOptions.SchemaRegistryName);
+                schemaRegistryProfile = _profileRepository.GetSchemaRegistry(schemaRegistryName);
 
                 if (schemaRegistryProfile == null)
-                    throw new Exception($"SchemaRegistry name [{consumeStartOptions.SchemaRegistryName}] not found.");
+                    throw new Exception($"SchemaRegistry name [{schemaRegistryName}] not found.");
             }
             else // default connection
             {
@@ -56,6 +59,17 @@ namespace Kafka.Investigator.Tool.KafkaObjects
             UserInteractionsHelper.WriteInformation($"Using schema registry [{schemaRegistryProfile.SchemaRegistryName}]");
 
             return schemaRegistryProfile;
+        }
+
+        private static void PrintSchemaRegistryParameters(SchemaRegistryProfile schemaProfile)
+        {
+            UserInteractionsHelper.WriteInformation("SchemaRegistry parameters:");
+            var consoleTable = new ConsoleTable("SchemaRegistry Parameter", "Value");
+            consoleTable.AddRow("Url", schemaProfile.Url);
+            consoleTable.AddRow("Username", schemaProfile.UserName);
+
+            consoleTable.Options.EnableCount = false;
+            consoleTable.Write(Format.Minimal);
         }
     }
 }

@@ -22,48 +22,49 @@ namespace Kafka.Investigator.Tool.UserInterations
 
             return convertedValue;
         }
-
-        public static void WriteError(string log)
+        
+        public static void WriteDebug(string log)
         {
-            var beforeColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
-            WriteLine(log);
-            Console.ForegroundColor = beforeColor;
-        }
-
-        public static void WriteWarning(string log)
-        {
-            var beforeColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            WriteLine(log);
-            Console.ForegroundColor = beforeColor;
-        }
-
-        public static void WriteSuccess(string log)
-        {
-            var beforeColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Green;
-            WriteLine(log);
-            Console.ForegroundColor = beforeColor;
+            Write(log);
         }
 
         public static void WriteInformation(string log)
         {
+            WriteWithColor(log, ConsoleColor.Blue);
+        }
+
+        public static void WriteSuccess(string log)
+        {
+            WriteWithColor(log, ConsoleColor.Green);
+        }
+
+        public static void WriteWarning(string log)
+        {
+            WriteWithColor(log, ConsoleColor.Yellow);
+        }
+
+        public static void WriteError(string log)
+        {
+            WriteWithColor(log, ConsoleColor.Red);
+        }
+
+        public static void WriteWithColor(string log, ConsoleColor color)
+        {
             var beforeColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Blue;
-            WriteLine(log);
+            Console.ForegroundColor = color;
+            Write(log);
             Console.ForegroundColor = beforeColor;
         }
 
-        public static void WriteDebug(string log)
-        {
-            WriteLine(log);
-        }
+        public static void WriteEmptyLine() => Write("", includeTime: false);
 
-        private static void WriteLine(string log, bool includeTime = true)
+        private static void Write(string log, bool includeTime = true)
         {
             var time = includeTime ? DateTime.Now.ToString("HH:mm:ss") : "";
-            Console.WriteLine($"{time} > {log}");
+            if (includeTime)
+                Console.WriteLine($"{time} > {log}");
+            else
+                Console.WriteLine($"{log}");
         }
 
         private static bool TryConvert<T>(string value, out T? convertedValue)
@@ -85,7 +86,5 @@ namespace Kafka.Investigator.Tool.UserInterations
                 return false;
             }
         }
-
-        
     }
 }

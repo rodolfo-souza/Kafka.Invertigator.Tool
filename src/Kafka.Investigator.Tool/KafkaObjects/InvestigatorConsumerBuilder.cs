@@ -1,7 +1,9 @@
 ﻿using Confluent.Kafka;
+using ConsoleTables;
 using Kafka.Investigator.Tool.Options.ConsumerOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
 using Kafka.Investigator.Tool.UserInterations;
+using Kafka.Investigator.Tool.UserInterations.ConsumerInterations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,10 +21,43 @@ namespace Kafka.Investigator.Tool.KafkaObjects
             _profileRepository = profileRepository;
         }
 
-        public IConsumer<byte[], byte[]> BuildConsumer(ConsumeStartOption consumeStartOption)
+        public IConsumer<byte[], byte[]> BuildConsumer(ConsumerStartRequest consumerStartRequest)
         {
-            var connectionProfile = GetConnectionProfile(consumeStartOption);
+            var connectionProfile = GetConnectionProfile(consumerStartRequest.ConnectionName);
 
+            var consumerConfig = CreateConsumerConfig(connectionProfile, consumerStartRequest.GroupId, consumerStartRequest.AutoOffset);
+            
+            PrintConsumerConfig(consumerStartRequest, consumerConfig);
+
+            return BuildConsumerForTopic(consumerConfig, consumerStartRequest.TopicName);
+        }
+
+        private ConnectionProfile GetConnectionProfile(string connectionName)
+        {
+            ConnectionProfile connectionProfile = null;
+
+            if (!string.IsNullOrEmpty(connectionName))
+            {
+                connectionProfile = _profileRepository.GetConnection(connectionName);
+
+                if (connectionProfile == null)
+                    throw new Exception($"Connection name [{connectionName}] not found.");
+            }
+            else // default connection
+            {
+                connectionProfile = _profileRepository.GetConnections().FirstOrDefault(c => c.Default == true);
+
+                if (connectionProfile == null)
+                    throw new Exception($"There's no default connection configured. Create a default connection.");
+            }
+
+            UserInteractionsHelper.WriteInformation($"Using connection [{connectionProfile.ConnectionName}]");
+
+            return connectionProfile;
+        }
+
+        private static ConsumerConfig CreateConsumerConfig(ConnectionProfile connectionProfile, string groupId, AutoOffsetReset autoOffsetReset)
+        {
             var consumerConfig = new ConsumerConfig()
             {
                 // ConnectionProfile
@@ -34,8 +69,8 @@ namespace Kafka.Investigator.Tool.KafkaObjects
                 SaslPassword = connectionProfile.Password,
 
                 // ConsumeStartOptions
-                GroupId = consumeStartOption.GroupId,
-                AutoOffsetReset = consumeStartOption.AutoOffset,
+                GroupId = groupId,
+                AutoOffsetReset = autoOffsetReset,
 
                 // Hard code
                 ClientId = Environment.MachineName,
@@ -50,6 +85,11 @@ namespace Kafka.Investigator.Tool.KafkaObjects
                 SocketKeepaliveEnable = true,
             };
 
+            return consumerConfig;
+        }
+
+        private static IConsumer<byte[], byte[]> BuildConsumerForTopic(ConsumerConfig consumerConfig, string topicName)
+        {
             var consumerBuilder = new ConsumerBuilder<byte[], byte[]>(consumerConfig)
                                   .SetErrorHandler((message, error) => UserInteractionsHelper.WriteError(error.Reason))
                                   .SetPartitionsRevokedHandler((c, partitions) =>
@@ -59,33 +99,40 @@ namespace Kafka.Investigator.Tool.KafkaObjects
 
             var consumer = consumerBuilder.Build();
 
-            consumer.Subscribe(consumeStartOption.TopicName);
+            consumer.Subscribe(topicName);
 
             return consumer;
         }
 
-        private ConnectionProfile GetConnectionProfile(ConsumeStartOption consumeStartOption)
+        private static void PrintConsumerConfig(ConsumerStartRequest consumerStartRequest, ConsumerConfig consumerConfig)
         {
-            ConnectionProfile connectionProfile = null;
+            UserInteractionsHelper.WriteInformation("Consumer config:");
 
-            if (!string.IsNullOrEmpty(consumeStartOption.ConnectionName))
-            {
-                connectionProfile = _profileRepository.GetConnection(consumeStartOption.ConnectionName);
+            var consoleTable = new ConsoleTable("Consumer Parameter", "Value");
+            consoleTable.AddRow("Topic", consumerStartRequest.TopicName);
+            consoleTable.AddRow("GroupId", consumerConfig.GroupId);
 
-                if (connectionProfile == null)
-                    throw new Exception($"Connection name [{consumeStartOption.ConnectionName}] not found.");
-            }
-            else // default connection
-            {
-                connectionProfile = _profileRepository.GetConnections().FirstOrDefault(c => c.Default == true);
+            consoleTable.AddRow("BootstrapServers", consumerConfig.BootstrapServers);
+            consoleTable.AddRow("SaslUsername", consumerConfig.SaslUsername);
+            consoleTable.AddRow("SaslMechanism", consumerConfig.SaslMechanism);
+            consoleTable.AddRow("SecurityProtocol", consumerConfig.SecurityProtocol);
+            consoleTable.AddRow("EnableSslCertificateVerification", consumerConfig.EnableSslCertificateVerification);
 
-                if (connectionProfile == null)
-                    throw new Exception($"There's no default connection configured. Enter a connection name or create a default connection.");
-            }
+            consoleTable.AddRow("AutoOffsetReset", consumerConfig.AutoOffsetReset);
+            consoleTable.AddRow("EnableAutoCommit", consumerConfig.EnableAutoCommit);
+            consoleTable.AddRow("ClientId", consumerConfig.ClientId);
+            consoleTable.AddRow("ConnectionsMaxIdleMs", consumerConfig.ConnectionsMaxIdleMs);
+            consoleTable.AddRow("TopicMetadataRefreshIntervalMs", consumerConfig.TopicMetadataRefreshIntervalMs);
+            consoleTable.AddRow("MetadataMaxAgeMs", consumerConfig.MetadataMaxAgeMs);
+            consoleTable.AddRow("SocketTimeoutMs", consumerConfig.SocketTimeoutMs);
 
-            UserInteractionsHelper.WriteInformation($"Using connection [{connectionProfile.ConnectionName}]");
+            consoleTable.AddRow("Acks", consumerConfig.Acks);
+            consoleTable.AddRow("EnableAutoOffsetStore", consumerConfig.EnableAutoOffsetStore);
+            consoleTable.AddRow("BrokerAddressFamily", consumerConfig.BrokerAddressFamily);
+            consoleTable.AddRow("SocketKeepaliveEnable", consumerConfig.SocketKeepaliveEnable);
 
-            return connectionProfile;
+            consoleTable.Options.EnableCount = false;
+            consoleTable.Write(Format.Minimal);
         }
     }
 }

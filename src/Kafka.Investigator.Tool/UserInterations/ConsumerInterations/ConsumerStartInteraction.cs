@@ -24,16 +24,21 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             _schemaRegistryBuilder = schemaRegistryBuilder;
         }
 
-        public void StartConsume(ConsumeStartOption consumeStartOptions, CancellationToken cancellationToken)
+        public void StartConsume(ConsumerStartRequest consumerStartRequest, CancellationToken cancellationToken)
         {
             try
             {
-                PrintConsumerData(consumeStartOptions);
+                var consumer = CreateConsumer(consumerStartRequest);
+                var usingSchemaRegistry = TryCreateSchemaRegistry(consumerStartRequest, out ISchemaRegistryClient schemaRegistry);
 
-                var consumer = CreateConsumer(consumeStartOptions);
-                var usingSchemaRegistry = TryCreateSchemaRegistry(consumeStartOptions, out ISchemaRegistryClient schemaRegistry);
-
-                UserInteractionsHelper.WriteDebug("Starting consumer...");
+                UserInteractionsHelper.WriteSuccess("Confirm consumer start? Y/N");
+                if (Console.ReadLine().ToUpper() != "Y")
+                {
+                    UserInteractionsHelper.WriteWarning("Operation aborted.");
+                    return;
+                }
+                
+                UserInteractionsHelper.WriteSuccess("Starting consumer...");
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
@@ -122,16 +127,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             rawMessageTable.Write();
         }
 
-        private static void PrintConsumerData(ConsumeStartOption consumeStartOptions)
-        {
-            var consoleTable = new ConsoleTable("Topic", "GroupId");
-            consoleTable.Configure(c => c.EnableCount = false);
-
-            consoleTable.AddRow(consumeStartOptions.TopicName, consumeStartOptions.GroupId);
-            consoleTable.Write();
-        }
-
-        private IConsumer<byte[], byte[]> CreateConsumer(ConsumeStartOption consumeStartOptions)
+        private IConsumer<byte[], byte[]> CreateConsumer(ConsumerStartRequest consumeStartOptions)
         {
             var consumer = _consumerBuilder.BuildConsumer(consumeStartOptions);
             UserInteractionsHelper.WriteInformation("Consumer created...");
@@ -139,7 +135,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             return consumer;
         }
 
-        private bool TryCreateSchemaRegistry(ConsumeStartOption consumeStartOptions, out ISchemaRegistryClient schemaRegistryClient)
+        private bool TryCreateSchemaRegistry(ConsumerStartRequest consumeStartOptions, out ISchemaRegistryClient schemaRegistryClient)
         {
             schemaRegistryClient = default;
 
@@ -151,7 +147,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
             try
             {
-                schemaRegistryClient = _schemaRegistryBuilder.BuildSchemaRegistryClient(consumeStartOptions);
+                schemaRegistryClient = _schemaRegistryBuilder.BuildSchemaRegistryClient(consumeStartOptions.SchemaRegistryName);
                 return true;
             }
             catch (Exception ex)
@@ -203,8 +199,8 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             }
 
             UserInteractionsHelper.WriteDebug("Current consumer assignment: ");
-
-            consoleTable.Write();
+            UserInteractionsHelper.WriteEmptyLine();
+            consoleTable.Write(Format.Minimal);
         }
 
         private static void PrintAvroSchemas(ISchemaRegistryClient schemaRegistry, int? keySchemaId, int? valueSchemaId)
