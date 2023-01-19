@@ -27,7 +27,7 @@ namespace Kafka.Investigator.Tool.KafkaObjects
             var connectionProfile = GetConnectionProfile(consumerStartRequest.ConnectionName);
 
             var consumerConfig = CreateConsumerConfig(connectionProfile, consumerStartRequest.GroupId, consumerStartRequest.AutoOffset);
-            
+
             PrintConsumerConfig(consumerStartRequest, consumerConfig);
 
             return BuildConsumerForTopic(consumerConfig, consumerStartRequest.TopicName);
@@ -59,6 +59,9 @@ namespace Kafka.Investigator.Tool.KafkaObjects
 
         private static ConsumerConfig CreateConsumerConfig(ConnectionProfile connectionProfile, string groupId, AutoOffsetReset autoOffsetReset)
         {
+            var userName = string.IsNullOrEmpty(connectionProfile.UserName) ? " " : connectionProfile.UserName;
+            var password = string.IsNullOrEmpty(connectionProfile.Password) ? " " : connectionProfile.Password;
+
             var consumerConfig = new ConsumerConfig()
             {
                 // ConnectionProfile
@@ -66,8 +69,8 @@ namespace Kafka.Investigator.Tool.KafkaObjects
                 SecurityProtocol = connectionProfile.SecurityProtocol,
                 EnableSslCertificateVerification = connectionProfile.EnableSslCertificateVerification,
                 BootstrapServers = connectionProfile.Broker,
-                SaslUsername = connectionProfile.UserName,
-                SaslPassword = connectionProfile.Password,
+                SaslUsername = userName,
+                SaslPassword = password,
 
                 // ConsumeStartOptions
                 GroupId = groupId,
@@ -92,7 +95,10 @@ namespace Kafka.Investigator.Tool.KafkaObjects
         private static IConsumer<byte[], byte[]> BuildConsumerForTopic(ConsumerConfig consumerConfig, string topicName)
         {
             var consumerBuilder = new ConsumerBuilder<byte[], byte[]>(consumerConfig)
-                                  .SetErrorHandler((message, error) => UserInteractionsHelper.WriteError(error.Reason))
+                                  .SetErrorHandler((message, error) =>
+                                  {
+                                      UserInteractionsHelper.WriteError("CONSUMER ERROR: " + error.Reason);
+                                  })
                                   .SetPartitionsRevokedHandler((c, partitions) =>
                                   {
                                       UserInteractionsHelper.WriteWarning($"[ConsumerWarning] Group rebalancing occurred.");

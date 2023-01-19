@@ -115,17 +115,18 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
         {
             var rawMessageTable = new ConsoleTable("-", "Raw (Avro Message will be unreadable)");
             var rawKey = Encoding.UTF8.GetString(consumerResult.Message.Key);
-            rawMessageTable.AddRow("Key", rawKey.Limit(100, " [more...]"));
+            rawMessageTable.AddRow("Key", rawKey.Limit(150, " [more...]"));
 
             var rawValue = Encoding.UTF8.GetString(consumerResult.Message.Value);
-            rawMessageTable.AddRow("Value", rawValue.Limit(100, " [more...]"));
+            rawMessageTable.AddRow("Value", rawValue.Limit(150, " [more...]"));
 
-            rawMessageTable.WriteWithOptions(title: "Raw Message");
+            rawMessageTable.WriteWithOptions(title: "Raw Message", color: ConsoleColor.Blue);
         }
 
         private IConsumer<byte[], byte[]> CreateConsumer(ConsumerStartRequest consumeStartOptions)
         {
             var consumer = _consumerBuilder.BuildConsumer(consumeStartOptions);
+
             UserInteractionsHelper.WriteInformation("Consumer created...");
 
             return consumer;
@@ -194,6 +195,9 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 consoleTable.AddRow(assignment.Partition.Value, partitionOffset.Value);
             }
 
+            if (!consumer.Assignment.Any())
+                consoleTable.AddRow("[none]", "Waiting for broker (server) assignment...");
+
             consoleTable.WriteWithOptions(title: "Current consumer assignment");
         }
 
@@ -205,14 +209,14 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             {
                 var schema = GetSchema(schemaRegistry, keySchemaId.Value);
 
-                consoleTable.AddRow("Key", keySchemaId, schema.Limit(100, " [more...]"));
+                consoleTable.AddRow("Key", keySchemaId, schema.Limit(150, " [more...]"));
             }
             
             if (valueSchemaId != null)
             {
                 var schema = GetSchema(schemaRegistry, valueSchemaId.Value);
 
-                consoleTable.AddRow("Value", valueSchemaId, schema.Limit(100, " [more...]"));
+                consoleTable.AddRow("Value", valueSchemaId, schema.Limit(150, " [more...]"));
             }
 
             consoleTable.WriteWithOptions(title: "SchemaRegistry information");
@@ -226,9 +230,9 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
                 return schema.SchemaString;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                UserInteractionsHelper.WriteError($"Error trying to get schema for schemaId: {schemaId}");
+                UserInteractionsHelper.WriteError($"Error trying to get schema for schemaId: {schemaId}: " + ex.Message);
                 return "fail";
             }
         }
@@ -262,19 +266,35 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             {
                 try
                 {
-                    var applicationData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                    var directory = UserInteractionsHelper.RequestInput<string>($"Inform path (default {applicationData})");
+                    var defaultExportPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    defaultExportPath = Path.Combine(defaultExportPath, "kafkainvestigator_messages");
 
-                    if (string.IsNullOrEmpty(directory))
-                        directory = applicationData;
+                    var selectedDirectory = UserInteractionsHelper.RequestInput<string>($"Inform path (default {defaultExportPath})");
 
-                    if (!Directory.Exists(directory))
-                        Directory.CreateDirectory(directory);
+                    if (string.IsNullOrEmpty(selectedDirectory))
+                        selectedDirectory = defaultExportPath;
+
+                    if (!Directory.Exists(selectedDirectory))
+                        Directory.CreateDirectory(selectedDirectory);
 
                     var filePrefix = UserInteractionsHelper.RequestInput<string>("Inform file prefix (ex.: prefix 'abc' will create 'abc-key' and 'abc-value' files)");
 
-                    var keyFilePath = Path.Combine(directory, filePrefix, "-key");
-                    var valueFilePath = Path.Combine(directory, filePrefix, "-value");
+                    var keyFilePath = Path.Combine(selectedDirectory, filePrefix + "-key");
+                    var valueFilePath = Path.Combine(selectedDirectory, filePrefix + "-value");
+
+                    if (File.Exists(keyFilePath))
+                    {
+                        var replace = UserInteractionsHelper.RequestYesNoResponse($"File {keyFilePath} already exists. Replace?");
+                        if (replace != "Y")
+                            throw new Exception("Operation cancelled by user.");
+                    }
+
+                    if (File.Exists(valueFilePath))
+                    {
+                        var replace = UserInteractionsHelper.RequestYesNoResponse($"File {valueFilePath} already exists. Replace?");
+                        if (replace != "Y")
+                            throw new Exception("Operation cancelled by user.");
+                    }
 
                     File.WriteAllBytes(keyFilePath, message.Key);
                     File.WriteAllBytes(valueFilePath, message.Value);
@@ -289,7 +309,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 {
                     UserInteractionsHelper.WriteError(ex.Message);
 
-                    if (UserInteractionsHelper.RequestYesNoResponse("Try again?") != "Y")
+                    if (UserInteractionsHelper.RequestYesNoResponse("[Export message] Try again?") != "Y")
                         stopAsk = true;
                 }
             }
