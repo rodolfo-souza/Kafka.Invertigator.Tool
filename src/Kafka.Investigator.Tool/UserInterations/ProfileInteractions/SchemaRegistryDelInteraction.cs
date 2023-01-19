@@ -17,7 +17,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
             _profileRepository = profileRepository;
         }
 
-        public void DelSchemaRegistry(SchemaRegistryDelOption options)
+        public void DelSchemaRegistry(SchemaRegistryDelOptions options)
         {
             try
             {

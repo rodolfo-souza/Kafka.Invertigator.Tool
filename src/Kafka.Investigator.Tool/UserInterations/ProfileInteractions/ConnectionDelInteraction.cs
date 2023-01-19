@@ -17,7 +17,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
             _profileRepository = profileRepository;
         }
 
-        public void DelConnection(ConnectionDelOption profileDelOptions)
+        public void DelConnection(ConnectionDelOptions profileDelOptions)
         {
             try
             {

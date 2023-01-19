@@ -1,6 +1,5 @@
 ﻿using CommandLine;
 using CommandLine.Text;
-using Kafka.Investigator.Tool.UserInterations;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -10,8 +9,8 @@ using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.Options.ProfileOptions
 {
-    [Verb("schema-registry-add", HelpText = "Add or replace a SchemaRegistry configuration for BasicAuthentication.")]
-    internal class SchemaRegistryAddOption : INotification
+    [Verb("connection-list", HelpText = "List all connections configured for user.")]
+    internal class ConnectionListOptions : INotification
     {
     }
 }

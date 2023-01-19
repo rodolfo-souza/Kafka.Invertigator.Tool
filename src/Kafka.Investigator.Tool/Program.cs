@@ -14,13 +14,14 @@ using System.Reflection;
 
 PrintPresentation();
 
-var parsedValue = Parser.Default.ParseArguments<ConnectionAddOption, 
-                                                ConnectionListOption,
-                                                ConnectionDelOption,
-                                                SchemaRegistryAddOption,
-                                                SchemaRegistryListOption,
-                                                SchemaRegistryDelOption,
+var parsedValue = Parser.Default.ParseArguments<ConnectionAddOptions, 
+                                                ConnectionListOptions,
+                                                ConnectionDelOptions,
+                                                SchemaRegistryAddOptions,
+                                                SchemaRegistryListOptions,
+                                                SchemaRegistryDelOptions,
                                                 ConsumerProfileAddOptions,
+                                                ConsumerProfileListOptions,
                                                 ConsumerProfileStartOptions,
                                                 ConsumerStartOptions>(args);
 

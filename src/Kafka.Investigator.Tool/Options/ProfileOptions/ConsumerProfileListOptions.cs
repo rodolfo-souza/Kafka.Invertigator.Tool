@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.Options.ProfileOptions
 {
-    [Verb("connection-add", HelpText = "Add or replace a connection.")]
-    internal class ConnectionAddOption : INotification
+    [Verb("consumer-profile-list", HelpText = "List all consumer profiles configured for user.")]
+    internal class ConsumerProfileListOptions : INotification
     {
     }
 }

@@ -1,5 +1,4 @@
 ﻿using CommandLine;
-using CommandLine.Text;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -9,8 +8,8 @@ using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.Options.ProfileOptions
 {
-    [Verb("connection-list", HelpText = "List all connections configured for user.")]
-    internal class ConnectionListOption : INotification
+    [Verb("connection-add", HelpText = "Add or replace a connection.")]
+    internal class ConnectionAddOptions : INotification
     {
     }
 }
