@@ -1,5 +1,6 @@
 ﻿using ConsoleTables;
 using Kafka.Investigator.Tool.ProfileManaging;
+using Kafka.Investigator.Tool.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,7 +27,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
             foreach (var p in connections)
                 consoleTable.AddRow(p.ConnectionName, p.Default == true ? "***" : "", p.Broker, p.UserName, p.SaslMechanism, p.SecurityProtocol, p.EnableSslCertificateVerification);
 
-            consoleTable.Write(Format.Alternative);
+            consoleTable.WriteWithOptions();
         }
     }
 }

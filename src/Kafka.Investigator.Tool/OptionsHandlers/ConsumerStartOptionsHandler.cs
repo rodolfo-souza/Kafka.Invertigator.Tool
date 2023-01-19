@@ -12,7 +12,8 @@ using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.OptionsHandlers
 {
-    internal class ConsumerStartOptionsHandler : INotificationHandler<ConsumeStartOption>
+    internal class ConsumerStartOptionsHandler : INotificationHandler<ConsumerStartOptions>,
+                                                 INotificationHandler<ConsumerProfileStartOptions>
     {
         private readonly ProfileRepository _profileRepository;
         private readonly ConsumerStartInteraction _consumerStartInteraction;
@@ -23,16 +24,30 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
             _consumerStartInteraction = consumerStartInteraction;
         }
 
-        public Task Handle(ConsumeStartOption consumerOptions, CancellationToken cancellationToken)
+        public Task Handle(ConsumerStartOptions consumerOptions, CancellationToken cancellationToken)
         {
             try
             {
-                ConsumerStartRequest startRequest;
+                UserInteractionsHelper.WriteWarning($"Starting consumer without consumer profile.");
 
-                if (!string.IsNullOrEmpty(consumerOptions.ConsumerProfileName))
-                    startRequest = BuildRequestFromConsumerProfile(consumerOptions.ConsumerProfileName);
-                else
-                    startRequest = new ConsumerStartRequest(consumerOptions);
+                var startRequest = new ConsumerStartRequest(consumerOptions);
+                _consumerStartInteraction.StartConsume(startRequest, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                UserInteractionsHelper.WriteError(ex.Message);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task Handle(ConsumerProfileStartOptions consumerOptions, CancellationToken cancellationToken)
+        {
+            try
+            {
+                UserInteractionsHelper.WriteWarning($"Starting consumer from consumer profile [{consumerOptions.ConsumerProfileName}].");
+
+                var startRequest = BuildRequestFromConsumerProfile(consumerOptions.ConsumerProfileName);
 
                 _consumerStartInteraction.StartConsume(startRequest, cancellationToken);
             }
@@ -42,7 +57,6 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
             }
 
             return Task.CompletedTask;
-
         }
 
         private ConsumerStartRequest BuildRequestFromConsumerProfile(string consumerProfileName)
@@ -51,8 +65,6 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
 
             if (consumerProfile == null)
                 throw new Exception($"The informed consumer profile [{consumerProfileName}] was not found.");
-
-            UserInteractionsHelper.WriteWarning($"Using parameters from consumer profile [{consumerProfileName}].");
 
             return new ConsumerStartRequest(consumerProfile);
         }

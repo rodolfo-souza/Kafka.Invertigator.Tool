@@ -31,9 +31,8 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 var consumer = CreateConsumer(consumerStartRequest);
                 var usingSchemaRegistry = TryCreateSchemaRegistry(consumerStartRequest, out ISchemaRegistryClient schemaRegistry);
 
-                UserInteractionsHelper.WriteSuccess("Confirm consumer start? Y/N");
-                if (Console.ReadLine().ToUpper() != "Y")
-                {
+                if (UserInteractionsHelper.RequestUserResponse("Confirm consumer start? Y/N", ConsoleColor.Yellow) != "Y")
+                { 
                     UserInteractionsHelper.WriteWarning("Operation aborted.");
                     return;
                 }
@@ -72,11 +71,10 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     switch (userOption)
                     {
                         case 1:
-                            UserInteractionsHelper.WriteWarning("Confirm COMMIT? Y/N");
-                            if (Console.ReadLine().ToUpper() == "Y")
+                            if (UserInteractionsHelper.RequestUserResponse("Confirm COMMIT? Y/N", ConsoleColor.Yellow) == "Y")
                             {
                                 consumer.Commit(consumerResult);
-                                UserInteractionsHelper.WriteInformation("Message commited.");
+                                UserInteractionsHelper.WriteSuccess("Message commited.");
                             }
                             break;
                         case 2:
@@ -93,8 +91,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     if (stopConsumer)
                         break;
 
-                    UserInteractionsHelper.WriteInformation("Continue consuming? Y/N");
-                    if (Console.ReadLine().ToUpper() != "Y")
+                    if (UserInteractionsHelper.RequestUserResponse("Continue consuming? Y/N", ConsoleColor.Blue) != "Y")
                         break;
                 }
 
@@ -112,7 +109,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
             consoleTable.AddRow(consumerResult.Partition.Value, consumerResult.Offset.Value, isKeyAvro, keySchemaId, isValueAvro, valueSchemaId);
 
-            consoleTable.Write();
+            consoleTable.WriteWithOptions(title: "Message result", color: ConsoleColor.Blue);
         }
 
         private static void PrintRawMessage(ConsumeResult<byte[], byte[]> consumerResult)
@@ -124,7 +121,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             var rawValue = Encoding.UTF8.GetString(consumerResult.Message.Value);
             rawMessageTable.AddRow("Value", rawValue.Limit(100, " [more...]"));
 
-            rawMessageTable.Write();
+            rawMessageTable.WriteWithOptions(title: "Raw Message");
         }
 
         private IConsumer<byte[], byte[]> CreateConsumer(ConsumerStartRequest consumeStartOptions)
@@ -198,14 +195,11 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 consoleTable.AddRow(assignment.Partition.Value, partitionOffset.Value);
             }
 
-            UserInteractionsHelper.WriteDebug("Current consumer assignment: ");
-            UserInteractionsHelper.WriteEmptyLine();
-            consoleTable.Write(Format.Minimal);
+            consoleTable.WriteWithOptions(title: "Current consumer assignment");
         }
 
         private static void PrintAvroSchemas(ISchemaRegistryClient schemaRegistry, int? keySchemaId, int? valueSchemaId)
         {
-            UserInteractionsHelper.WriteInformation("SchemaRegistry information:");
             var consoleTable = new ConsoleTable("-", "SchemaId", "Schema");
 
             if (keySchemaId != null)
@@ -222,7 +216,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 consoleTable.AddRow("Value", valueSchemaId, schema.Limit(100, " [more...]"));
             }
 
-            consoleTable.Write();
+            consoleTable.WriteWithOptions(title: "SchemaRegistry information");
         }
 
         private static string GetSchema(ISchemaRegistryClient schemaRegistry, int schemaId)
@@ -246,11 +240,11 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
             while(true)
             {
-                UserInteractionsHelper.WriteWarning("What do you want to do with message?");
-                UserInteractionsHelper.WriteWarning("1 - Commit message (be careful!)");
-                UserInteractionsHelper.WriteWarning("3 - Export message (save as file)");
-                UserInteractionsHelper.WriteWarning("3 - Continue consuming (without commit)");
-                UserInteractionsHelper.WriteWarning("4 - Finish consumer");
+                UserInteractionsHelper.WriteWithColor("What do you want to do with message?", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("1 - Commit message (be careful!)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("2 - Export message (save as file)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("3 - Continue consuming (without commit)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("4 - Finish consumer", ConsoleColor.Yellow);
 
                 var userOption = Console.ReadLine();
 

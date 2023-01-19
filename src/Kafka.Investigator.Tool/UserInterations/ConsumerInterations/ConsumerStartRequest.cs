@@ -33,7 +33,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             SchemaRegistryName = consumerProfile.SchemaRegistryName;
         }
 
-        public ConsumerStartRequest(ConsumeStartOption consumeStartOptions)
+        public ConsumerStartRequest(ConsumerStartOptions consumeStartOptions)
         {
             ConnectionName = consumeStartOptions.ConnectionName;
             TopicName = consumeStartOptions.TopicName;

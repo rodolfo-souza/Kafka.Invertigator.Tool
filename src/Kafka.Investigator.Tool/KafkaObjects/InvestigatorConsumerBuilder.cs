@@ -4,6 +4,7 @@ using Kafka.Investigator.Tool.Options.ConsumerOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
 using Kafka.Investigator.Tool.UserInterations;
 using Kafka.Investigator.Tool.UserInterations.ConsumerInterations;
+using Kafka.Investigator.Tool.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -106,9 +107,8 @@ namespace Kafka.Investigator.Tool.KafkaObjects
 
         private static void PrintConsumerConfig(ConsumerStartRequest consumerStartRequest, ConsumerConfig consumerConfig)
         {
-            UserInteractionsHelper.WriteInformation("Consumer config:");
+            var consoleTable = new ConsoleTable("Parameter", "Value");
 
-            var consoleTable = new ConsoleTable("Consumer Parameter", "Value");
             consoleTable.AddRow("Topic", consumerStartRequest.TopicName);
             consoleTable.AddRow("GroupId", consumerConfig.GroupId);
 
@@ -132,7 +132,7 @@ namespace Kafka.Investigator.Tool.KafkaObjects
             consoleTable.AddRow("SocketKeepaliveEnable", consumerConfig.SocketKeepaliveEnable);
 
             consoleTable.Options.EnableCount = false;
-            consoleTable.Write(Format.Minimal);
+            consoleTable.WriteWithOptions(title: "Consumer Config");
         }
     }
 }

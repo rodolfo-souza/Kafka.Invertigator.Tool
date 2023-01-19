@@ -22,6 +22,17 @@ namespace Kafka.Investigator.Tool.UserInterations
 
             return convertedValue;
         }
+
+        public static string RequestUserResponse(string question, ConsoleColor? color = null, bool responseToUpper = true)
+        {
+            WriteWithColor(question, color);
+            var userResponse = Console.ReadLine();
+
+            if (responseToUpper)
+                return userResponse.ToUpper();
+            
+            return userResponse;
+        }
         
         public static void WriteDebug(string log)
         {
@@ -48,10 +59,10 @@ namespace Kafka.Investigator.Tool.UserInterations
             WriteWithColor(log, ConsoleColor.Red);
         }
 
-        public static void WriteWithColor(string log, ConsoleColor color)
+        public static void WriteWithColor(string log, ConsoleColor? color = null)
         {
             var beforeColor = Console.ForegroundColor;
-            Console.ForegroundColor = color;
+            Console.ForegroundColor = color ?? beforeColor;
             Write(log);
             Console.ForegroundColor = beforeColor;
         }

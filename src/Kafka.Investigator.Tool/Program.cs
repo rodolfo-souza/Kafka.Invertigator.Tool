@@ -21,7 +21,8 @@ var parsedValue = Parser.Default.ParseArguments<ConnectionAddOption,
                                                 SchemaRegistryListOption,
                                                 SchemaRegistryDelOption,
                                                 ConsumerProfileAddOptions,
-                                                ConsumeStartOption>(args);
+                                                ConsumerProfileStartOptions,
+                                                ConsumerStartOptions>(args);
 
 parsedValue.WithParsed(async options => await ExecutarAsync(options))
            .WithNotParsed(errors => Console.WriteLine(string.Join(", ", errors.Select(e => e.Tag))));

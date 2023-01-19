@@ -3,6 +3,7 @@ using ConsoleTables;
 using Kafka.Investigator.Tool.Options.ConsumerOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
 using Kafka.Investigator.Tool.UserInterations;
+using Kafka.Investigator.Tool.Util;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -63,13 +64,11 @@ namespace Kafka.Investigator.Tool.KafkaObjects
 
         private static void PrintSchemaRegistryParameters(SchemaRegistryProfile schemaProfile)
         {
-            UserInteractionsHelper.WriteInformation("SchemaRegistry parameters:");
-            var consoleTable = new ConsoleTable("SchemaRegistry Parameter", "Value");
+            var consoleTable = new ConsoleTable("Parameter", "Value");
             consoleTable.AddRow("Url", schemaProfile.Url);
             consoleTable.AddRow("Username", schemaProfile.UserName);
 
-            consoleTable.Options.EnableCount = false;
-            consoleTable.Write(Format.Minimal);
+            consoleTable.WriteWithOptions(title: "SchemaRegistry parameters");
         }
     }
 }

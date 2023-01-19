@@ -1,5 +1,6 @@
 ﻿using ConsoleTables;
 using Kafka.Investigator.Tool.ProfileManaging;
+using Kafka.Investigator.Tool.Util;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -27,7 +28,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
             foreach (var s in schemaRegistries)
                 consoleTable.AddRow(s.SchemaRegistryName, s.Default == true ? "***" : "", s.Url, s.UserName);
 
-            consoleTable.Write(Format.Alternative);
+            consoleTable.WriteWithOptions();
         }
     }
 }

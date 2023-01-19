@@ -9,20 +9,17 @@ using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.Options.ConsumerOptions
 {
-    [Verb("consumer-start", HelpText = "Run a consumer.")]
-    internal class ConsumeStartOption : INotification
+    [Verb("consumer-start", HelpText = "Starts a consumer from parameters (without a consumer profile).")]
+    internal class ConsumerStartOptions : INotification
     {
-        [Option('p', "consumer-profile", HelpText = "Consumer profile that contains all other parameters. If informed, other parameters will be ignored.")]
-        public string ConsumerProfileName { get; set; }
+        [Option('t', "topic", Required = true, HelpText = "Topic name")]
+        public string? TopicName { get; set; }
 
-        [Option('t', "topic", Required = false, HelpText = "Topic name")]
-        public string TopicName { get; set; }
-
-        [Option('g', "group-id", Required = false, HelpText = "Group Id (identifier of consumer in Kafka server)")]
-        public string GroupId { get; set; }
+        [Option('g', "group-id", Required = true, HelpText = "Group Id (identifier of consumer in Kafka server)")]
+        public string? GroupId { get; set; }
         
         [Option('c', "connection", Required = false, HelpText = "Connection that will be used. If empty, the default connection will be used. View list using connection-list command.")]
-        public string ConnectionName { get; set; }
+        public string? ConnectionName { get; set; }
         
         [Option('o', "offset", Required = false, Default = AutoOffsetReset.Earliest, HelpText = "AutoOffsetReset. Enter 'Latest' or 'Earliest'. Not applicable for consumer-group with existing offset.")]
         public AutoOffsetReset AutoOffset { get; set; }
@@ -31,6 +28,6 @@ namespace Kafka.Investigator.Tool.Options.ConsumerOptions
         public bool UseSchemaRegistry { get; set; }
         
         [Option('s', "schema-registry", Required = false, HelpText = "Schema Registry that will be used. If empty, the default schema registry will be used. View list using connection-list command.")]
-        public string SchemaRegistryName { get; set; }
+        public string? SchemaRegistryName { get; set; }
     }
 }
