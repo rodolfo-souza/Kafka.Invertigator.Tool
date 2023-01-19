@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Kafka.Investigator.Tool.Options.ConsumerOptions
 {
     [Verb("consumer-start", HelpText = "Starts a consumer from parameters (without a consumer profile).")]
-    internal class ConsumerStartOptions : INotification
+    internal class ConsumerStartOptions : IRequest
     {
         [Option('t', "topic", Required = true, HelpText = "Topic name")]
         public string? TopicName { get; set; }

@@ -12,8 +12,8 @@ using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.OptionsHandlers
 {
-    internal class ConsumerStartOptionsHandler : INotificationHandler<ConsumerStartOptions>,
-                                                 INotificationHandler<ConsumerProfileStartOptions>
+    internal class ConsumerStartOptionsHandler : IRequestHandler<ConsumerStartOptions>,
+                                                 IRequestHandler<ConsumerProfileStartOptions>
     {
         private readonly ProfileRepository _profileRepository;
         private readonly ConsumerStartInteraction _consumerStartInteraction;
@@ -24,7 +24,7 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
             _consumerStartInteraction = consumerStartInteraction;
         }
 
-        public Task Handle(ConsumerStartOptions consumerOptions, CancellationToken cancellationToken)
+        public Task<Unit> Handle(ConsumerStartOptions consumerOptions, CancellationToken cancellationToken)
         {
             try
             {
@@ -38,10 +38,10 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
                 UserInteractionsHelper.WriteError(ex.Message);
             }
 
-            return Task.CompletedTask;
+            return Task.FromResult(Unit.Value);
         }
 
-        public Task Handle(ConsumerProfileStartOptions consumerOptions, CancellationToken cancellationToken)
+        public Task<Unit> Handle(ConsumerProfileStartOptions consumerOptions, CancellationToken cancellationToken)
         {
             try
             {
@@ -56,7 +56,7 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
                 UserInteractionsHelper.WriteError(ex.Message);
             }
 
-            return Task.CompletedTask;
+            return Task.FromResult(Unit.Value);
         }
 
         private ConsumerStartRequest BuildRequestFromConsumerProfile(string consumerProfileName)

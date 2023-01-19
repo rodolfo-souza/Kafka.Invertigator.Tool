@@ -64,7 +64,7 @@ static async Task ExecuteOption(object options, ServiceProvider serviceProvider)
     if (mediator == null)
         throw new Exception("MediatR was not configured properly.");
 
-    await mediator.Publish(options);
+    await mediator.Send(options);
 }
 
 static void PrintPresentation()

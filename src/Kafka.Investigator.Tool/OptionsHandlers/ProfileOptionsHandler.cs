@@ -12,14 +12,14 @@ using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.OptionsHandlers
 {
-    internal class ProfileOptionsHandler : INotificationHandler<ConnectionAddOptions>,
-                                           INotificationHandler<ConnectionDelOptions>,
-                                           INotificationHandler<ConnectionListOptions>,
-                                           INotificationHandler<SchemaRegistryAddOptions>,
-                                           INotificationHandler<SchemaRegistryListOptions>,
-                                           INotificationHandler<SchemaRegistryDelOptions>,
-                                           INotificationHandler<ConsumerProfileAddOptions>,
-                                           INotificationHandler<ConsumerProfileListOptions>
+    internal class ProfileOptionsHandler : IRequestHandler<ConnectionAddOptions>,
+                                           IRequestHandler<ConnectionDelOptions>,
+                                           IRequestHandler<ConnectionListOptions>,
+                                           IRequestHandler<SchemaRegistryAddOptions>,
+                                           IRequestHandler<SchemaRegistryListOptions>,
+                                           IRequestHandler<SchemaRegistryDelOptions>,
+                                           IRequestHandler<ConsumerProfileAddOptions>,
+                                           IRequestHandler<ConsumerProfileListOptions>
     {
         private readonly ConnectionAddInteraction _connectionAddInteraction;
         private readonly ConnectionDelInteraction _connectionDelInteraction;
@@ -38,21 +38,21 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
             _profileRepository = profileRepository;
         }
 
-        public Task Handle(ConnectionAddOptions profileAddOptions, CancellationToken cancellationToken)
+        public Task<Unit> Handle(ConnectionAddOptions profileAddOptions, CancellationToken cancellationToken)
         {
             _connectionAddInteraction.AddConnection();
 
-            return Task.CompletedTask;
+            return Task.FromResult(Unit.Value);
         }
 
-        public Task Handle(ConnectionDelOptions connectionDelOptions, CancellationToken cancellationToken)
+        public Task<Unit> Handle(ConnectionDelOptions connectionDelOptions, CancellationToken cancellationToken)
         {
             _connectionDelInteraction.DelConnection(connectionDelOptions);
 
-            return Task.CompletedTask;
+            return Task.FromResult(Unit.Value);
         }
 
-        public Task Handle(ConnectionListOptions connectionListOptions, CancellationToken cancellationToken)
+        public Task<Unit> Handle(ConnectionListOptions connectionListOptions, CancellationToken cancellationToken)
         {
             var connections = _profileRepository.GetConnections();
 
@@ -63,17 +63,17 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
 
             consoleTable.WriteWithOptions("Connections List");
 
-            return Task.CompletedTask;
+            return Task.FromResult(Unit.Value);
         }
 
-        public Task Handle(SchemaRegistryAddOptions schemaRegistryAddOptions, CancellationToken cancellationToken)
+        public Task<Unit> Handle(SchemaRegistryAddOptions schemaRegistryAddOptions, CancellationToken cancellationToken)
         {
             _schemaRegistryAddInteraction.AddSchemaRegistry();
 
-            return Task.CompletedTask;
+            return Task.FromResult(Unit.Value);
         }
 
-        public Task Handle(SchemaRegistryListOptions schemaRegistryListOptions, CancellationToken cancellationToken)
+        public Task<Unit> Handle(SchemaRegistryListOptions schemaRegistryListOptions, CancellationToken cancellationToken)
         {
             var schemaRegistries = _profileRepository.GetSchemaRegistries();
 
@@ -84,24 +84,24 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
 
             consoleTable.WriteWithOptions("Schema Registry List");
 
-            return Task.CompletedTask;
+            return Task.FromResult(Unit.Value);
         }
 
-        public Task Handle(SchemaRegistryDelOptions schemaRegistryDelOptions, CancellationToken cancellationToken)
+        public Task<Unit> Handle(SchemaRegistryDelOptions schemaRegistryDelOptions, CancellationToken cancellationToken)
         {
             _schemaRegistryDelInteraction.DelSchemaRegistry(schemaRegistryDelOptions);
 
-            return Task.CompletedTask;
+            return Task.FromResult(Unit.Value);
         }
 
-        public Task Handle(ConsumerProfileAddOptions consumerAddOptions, CancellationToken cancellationToken)
+        public Task<Unit> Handle(ConsumerProfileAddOptions consumerAddOptions, CancellationToken cancellationToken)
         {
             _consumerProfileAddInteraction.AddProfile(consumerAddOptions);
 
-            return Task.CompletedTask;
+            return Task.FromResult(Unit.Value);
         }
 
-        public Task Handle(ConsumerProfileListOptions consumerProfileListOptions, CancellationToken cancellationToken)
+        public Task<Unit> Handle(ConsumerProfileListOptions consumerProfileListOptions, CancellationToken cancellationToken)
         {
             var consumerProfiles = _profileRepository.GetConsumerProfiles();
 
@@ -112,7 +112,7 @@ namespace Kafka.Investigator.Tool.OptionsHandlers
 
             consoleTable.WriteWithOptions("Consumer Profile List");
 
-            return Task.CompletedTask;
+            return Task.FromResult(Unit.Value);
         }
     }
 }

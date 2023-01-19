@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Kafka.Investigator.Tool.Options.ProfileOptions
 {
     [Verb("consumer-profile-list", HelpText = "List all consumer profiles configured for user.")]
-    internal class ConsumerProfileListOptions : INotification
+    internal class ConsumerProfileListOptions : IRequest
     {
     }
 }
