@@ -18,5 +18,24 @@ namespace Kafka.Investigator.Tool.Util
 
             return value.Substring(0, maxLength) + trimIndicator;
         }
+
+        public static bool IsNullOrEmptyOrContaisSpaces(this string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return true;
+
+            if (value.Contains(" "))
+                return true;
+
+            return false;
+        }
+
+        public static bool ContainSpaces(this string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return false;
+
+            return value.Contains(" ");
+        }
     }
 }

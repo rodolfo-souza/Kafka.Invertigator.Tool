@@ -20,6 +20,7 @@ var parsedValue = Parser.Default.ParseArguments<ConnectionAddOption,
                                                 SchemaRegistryAddOption,
                                                 SchemaRegistryListOption,
                                                 SchemaRegistryDelOption,
+                                                ConsumerProfileAddOptions,
                                                 ConsumeStartOption>(args);
 
 parsedValue.WithParsed(async options => await ExecutarAsync(options))
@@ -53,6 +54,7 @@ void ConfigureServices(IServiceCollection services)
     services.AddSingleton<SchemaRegistryDelInteraction>();
     services.AddSingleton<SchemaRegistryListInteraction>();
     services.AddSingleton<ConsumerStartInteraction>();
+    services.AddSingleton<ConsumerProfileAddInteraction>();
 }
 
 static async Task ExecuteOption(object options, ServiceProvider serviceProvider)

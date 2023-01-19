@@ -96,6 +96,47 @@ namespace Kafka.Investigator.Tool.ProfileManaging
 
         #endregion
 
+        #region Consumer
+
+        public ConsumerProfile? GetConsumerProfile(string consumerName)
+        {
+            return _profileSet.ConsumerProfiles.FirstOrDefault(s => s.ConsumerName == consumerName);
+        }
+
+        public IReadOnlyList<ConsumerProfile> GetConsumerProfiles()
+        {
+            return _profileSet.ConsumerProfiles.ToList();
+        }
+
+        public void AddOrReplaceConsumerProfile(ConsumerProfile consumerProfile)
+        {
+            var existingConsumer = GetConsumerProfile(consumerProfile.ConsumerName);
+
+            if (existingConsumer == null)
+                _profileSet.ConsumerProfiles.Add(consumerProfile);
+            else
+            {
+                _profileSet.ConsumerProfiles.Remove(existingConsumer);
+                _profileSet.ConsumerProfiles.Add(consumerProfile);
+            }
+
+            SaveChanges();
+        }
+
+        public void DelConsumerProfile(ConsumerProfile consumerProfile)
+        {
+            var existingConsumerProfile = GetSchemaRegistry(consumerProfile.ConsumerName);
+
+            if (existingConsumerProfile == null)
+                return;
+
+            _profileSet.ConsumerProfiles.Remove(consumerProfile);
+
+            SaveChanges();
+        }
+
+        #endregion
+
         private void SaveChanges()
         {
             var profilesFullPath = GetProfilesFilePath();
