@@ -5,16 +5,20 @@ using Kafka.Investigator.Tool.KafkaObjects;
 using Kafka.Investigator.Tool.Options.ConsumerOptions;
 using Kafka.Investigator.Tool.Options.ProfileOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
+using Kafka.Investigator.Tool.UserInterations;
 using Kafka.Investigator.Tool.UserInterations.ConsumerInterations;
 using Kafka.Investigator.Tool.UserInterations.ProfileInteractions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
+Console.ForegroundColor = ConsoleColor.White;
 
 PrintPresentation();
 
-var parsedValue = Parser.Default.ParseArguments<ConnectionAddOptions,
+try
+{
+    var parsedValue = Parser.Default.ParseArguments<ConnectionAddOptions,
                                                 ConnectionListOptions,
                                                 ConnectionDelOptions,
                                                 SchemaRegistryAddOptions,
@@ -26,8 +30,13 @@ var parsedValue = Parser.Default.ParseArguments<ConnectionAddOptions,
                                                 ConsumerProfileStartOptions,
                                                 ConsumerStartOptions>(args);
 
-parsedValue.WithParsed(async options => await ExecutarAsync(options))
-           .WithNotParsed(errors => Console.WriteLine(string.Join(", ", errors.Select(e => e.Tag))));
+    parsedValue.WithParsed(async options => await ExecutarAsync(options))
+               .WithNotParsed(errors => Console.WriteLine(string.Join(", ", errors.Select(e => e.Tag))));
+}
+finally
+{
+    UserInteractionsHelper.WriteDebug("Kafka Investigator finished.");
+}
 
 
 // Solicita ao MediatR que enderece o processamento da option. 

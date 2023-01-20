@@ -54,43 +54,54 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     }
 
                     UserInteractionsHelper.WriteSuccess("===>>> Message received.");
+                    
+                    PrintConsumerResultData(consumerResult);
 
                     bool isKeyAvro = IsAvroMessage(consumerResult.Message.Key, out int? keySchemaId);
                     bool isValueAvro = IsAvroMessage(consumerResult.Message.Value, out int? valueSchemaId);
-                    
-                    PrintConsumerResultData(consumerResult, isKeyAvro, keySchemaId, isValueAvro, valueSchemaId);
 
-                    PrintRawMessage(consumerResult);
+                    PrintRawMessagePreview(consumerResult, isKeyAvro, keySchemaId, isValueAvro, valueSchemaId);
 
                     if (usingSchemaRegistry && (isKeyAvro || isValueAvro))
                         PrintAvroSchemas(schemaRegistry, keySchemaId, valueSchemaId);
 
-                    var userOption = RequestUserNextAction();
+                    // User actions
                     bool stopConsumer = false;
-
-                    switch (userOption)
+                    bool readNext = false;
+                    while (!stopConsumer && !readNext)
                     {
-                        case 1: // Commit
-                            if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT?") == "Y")
-                            {
-                                consumer.Commit(consumerResult);
-                                UserInteractionsHelper.WriteSuccess("Message commited.");
-                            }
-                            break;
-                        case 2: // Save Message
-                            SaveMessage(consumerResult.Message);
-                            break;
-                        case 3: // Continue
-                            continue;
-                        case 4: // Stop Consumer
-                            stopConsumer = true;
-                            break;
+                        var userOption = RequestUserNextAction();
+
+                        switch (userOption)
+                        {
+                            case 1: // Continue
+                                readNext = true;
+                                break;
+                            case 2: // Print Message Key
+                                UserInteractionsHelper.WriteInformation("Raw Message Key");
+                                Console.WriteLine(Encoding.UTF8.GetString(consumerResult.Message.Key));
+                                break;
+                            case 3: // Pring Message Value
+                                UserInteractionsHelper.WriteInformation("Raw Message Value");
+                                Console.WriteLine(Encoding.UTF8.GetString(consumerResult.Message.Value));
+                                break;
+                            case 4: // Commit Message
+                                if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT?") == "Y")
+                                {
+                                    consumer.Commit(consumerResult);
+                                    UserInteractionsHelper.WriteSuccess("Message commited.");
+                                }
+                                break;
+                            case 5: // Save Message
+                                SaveMessage(consumerResult.Message);
+                                break;
+                            case 6: // Stop Consumer
+                                stopConsumer = true;
+                                break;
+                        }
                     }
 
                     if (stopConsumer)
-                        break;
-
-                    if (UserInteractionsHelper.RequestYesNoResponse("Continue consuming?") != "Y")
                         break;
                 }
 
@@ -102,25 +113,13 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             }
         }
 
-        private static void PrintConsumerResultData(ConsumeResult<byte[], byte[]> consumerResult, bool isKeyAvro, int? keySchemaId, bool isValueAvro, int? valueSchemaId)
+        private static void PrintConsumerResultData(ConsumeResult<byte[], byte[]> consumerResult)
         {
-            var consoleTable = new ConsoleTable("Partition", "Offset", "Is Key Avro?", "Key SchemaId", "Is Value Avro?", "Value SchemaId");
+            var consoleTable = new ConsoleTable("Partition", "Offset");
 
-            consoleTable.AddRow(consumerResult.Partition.Value, consumerResult.Offset.Value, isKeyAvro, keySchemaId, isValueAvro, valueSchemaId);
+            consoleTable.AddRow(consumerResult.Partition.Value, consumerResult.Offset.Value);
 
             consoleTable.WriteWithOptions(title: "Message result", color: ConsoleColor.Blue);
-        }
-
-        private static void PrintRawMessage(ConsumeResult<byte[], byte[]> consumerResult)
-        {
-            var rawMessageTable = new ConsoleTable("-", "Raw (Avro Message will be unreadable)");
-            var rawKey = Encoding.UTF8.GetString(consumerResult.Message.Key);
-            rawMessageTable.AddRow("Key", rawKey.Limit(150, " [more...]"));
-
-            var rawValue = Encoding.UTF8.GetString(consumerResult.Message.Value);
-            rawMessageTable.AddRow("Value", rawValue.Limit(150, " [more...]"));
-
-            rawMessageTable.WriteWithOptions(title: "Raw Message", color: ConsoleColor.Blue);
         }
 
         private IConsumer<byte[], byte[]> CreateConsumer(ConsumerStartRequest consumeStartOptions)
@@ -201,6 +200,18 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             consoleTable.WriteWithOptions(title: "Current consumer assignment");
         }
 
+        private static void PrintRawMessagePreview(ConsumeResult<byte[], byte[]> consumerResult, bool isKeyAvro, int? keySchemaId, bool isValueAvro, int? valueSchemaId)
+        {
+            var rawMessageTable = new ConsoleTable("-", "Avro", "SchemaId", "Raw Preview (Avro values are unreadable)");
+            var rawKey = Encoding.UTF8.GetString(consumerResult.Message.Key);
+            rawMessageTable.AddRow("Key", isKeyAvro, keySchemaId, rawKey.Limit(150, " [more...]"));
+
+            var rawValue = Encoding.UTF8.GetString(consumerResult.Message.Value);
+            rawMessageTable.AddRow("Value", isValueAvro, valueSchemaId, rawValue.Limit(150, " [more...]"));
+
+            rawMessageTable.WriteWithOptions(title: "Raw Message Preview", color: ConsoleColor.Blue);
+        }
+
         private static void PrintAvroSchemas(ISchemaRegistryClient schemaRegistry, int? keySchemaId, int? valueSchemaId)
         {
             var consoleTable = new ConsoleTable("-", "SchemaId", "Schema");
@@ -233,21 +244,24 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             catch (Exception ex)
             {
                 UserInteractionsHelper.WriteError($"Error trying to get schema for schemaId: {schemaId}: " + ex.Message);
-                return "fail";
+                return $"fail: {ex.Message}";
             }
         }
 
         private static int RequestUserNextAction()
         {
-            var validOptions = new[] { "1", "2", "3", "4" };
+            var validOptions = new[] { "1", "2", "3", "4", "5", "6" };
 
             while(true)
             {
-                UserInteractionsHelper.WriteWithColor("What do you want to do with message?", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("1 - Commit message (be careful!)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("2 - Export message (save as file)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("3 - Continue consuming (without commit)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("4 - Finish consumer", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteEmptyLine();
+                UserInteractionsHelper.WriteWithColor("===>>> MESSAGE OPTIONS:", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("1 - Continue consuming (without commit)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("2 - View full Message Key", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("3 - View full Message Value", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("4 - Commit message (be careful!)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("5 - Export message (save as file)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("6 - Finish consumer", ConsoleColor.Yellow);
 
                 var userOption = Console.ReadLine();
 
