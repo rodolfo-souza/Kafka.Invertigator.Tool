@@ -157,6 +157,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
         private static bool IsAvroMessage(byte[] messageBytes, out int? schemaId)
         {
             // Constant used for AvroSerializer.
+            // https://github.com/confluentinc/confluent-kafka-dotnet/blob/59e0243d8bf6e8456b4c9f853c926cf449e89ac8/src/Confluent.SchemaRegistry.Serdes.Avro/Constants.cs
             byte MagicByte = 0;
 
             schemaId = null;
