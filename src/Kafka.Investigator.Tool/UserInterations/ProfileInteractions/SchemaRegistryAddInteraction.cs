@@ -1,4 +1,5 @@
-﻿using Kafka.Investigator.Tool.ProfileManaging;
+﻿using Kafka.Investigator.Tool.Options.ProfileOptions;
+using Kafka.Investigator.Tool.ProfileManaging;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -8,13 +9,20 @@ using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
 {
-    internal class SchemaRegistryAddInteraction
+    internal class SchemaRegistryAddInteraction : IRequestHandler<SchemaRegistryAddOptions>
     {
         private readonly ProfileRepository _profileRepository;
 
         public SchemaRegistryAddInteraction(ProfileRepository profileRepository)
         {
             _profileRepository = profileRepository;
+        }
+
+        public Task<Unit> Handle(SchemaRegistryAddOptions request, CancellationToken cancellationToken)
+        {
+            AddSchemaRegistry();
+
+            return Task.FromResult(Unit.Value);
         }
 
         public void AddSchemaRegistry()

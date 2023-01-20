@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Kafka.Investigator.Tool.Options.ProfileOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
+using MediatR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,13 +10,20 @@ using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
 {
-    internal class ConsumerProfileAddInteraction
+    internal class ConsumerProfileAddInteraction : IRequestHandler<ConsumerProfileAddOptions>
     {
         private readonly ProfileRepository _profileRepository;
 
         public ConsumerProfileAddInteraction(ProfileRepository profileRepository)
         {
             _profileRepository = profileRepository;
+        }
+
+        public Task<Unit> Handle(ConsumerProfileAddOptions consumerAddOptions, CancellationToken cancellationToken)
+        {
+            AddProfile(consumerAddOptions);
+
+            return Task.FromResult(Unit.Value);
         }
 
         internal void AddProfile(ConsumerProfileAddOptions consumerAddOptions)

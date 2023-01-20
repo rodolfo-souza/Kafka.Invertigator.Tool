@@ -1,5 +1,6 @@
 ﻿using Kafka.Investigator.Tool.Options.ProfileOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
+using MediatR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,13 +9,19 @@ using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
 {
-    internal class SchemaRegistryDelInteraction
+    internal class SchemaRegistryDelInteraction : IRequestHandler<SchemaRegistryDelOptions>
     {
         private readonly ProfileRepository _profileRepository;
 
         public SchemaRegistryDelInteraction(ProfileRepository profileRepository)
         {
             _profileRepository = profileRepository;
+        }
+
+        public Task<Unit> Handle(SchemaRegistryDelOptions request, CancellationToken cancellationToken)
+        {
+            DelSchemaRegistry(request);
+            return Task.FromResult(Unit.Value);
         }
 
         public void DelSchemaRegistry(SchemaRegistryDelOptions options)

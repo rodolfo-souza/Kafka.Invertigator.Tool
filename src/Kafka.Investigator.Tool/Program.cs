@@ -16,9 +16,7 @@ Console.ForegroundColor = ConsoleColor.White;
 
 PrintPresentation(1);
 
-try
-{
-    var parsedValue = Parser.Default.ParseArguments<ConnectionAddOptions,
+var parsedValue = Parser.Default.ParseArguments<ConnectionAddOptions,
                                                 ConnectionListOptions,
                                                 ConnectionDelOptions,
                                                 SchemaRegistryAddOptions,
@@ -30,14 +28,8 @@ try
                                                 ConsumerProfileStartOptions,
                                                 ConsumerStartOptions>(args);
 
-    parsedValue.WithParsed(async options => await ExecutarAsync(options))
-               .WithNotParsed(errors => Console.WriteLine(string.Join(", ", errors.Select(e => e.Tag))));
-}
-finally
-{
-    UserInteractionsHelper.WriteDebug("Kafka Investigator finished.");
-}
-
+parsedValue.WithParsed(async options => await ExecutarAsync(options))
+           .WithNotParsed(errors => Console.WriteLine(string.Join("\n", errors)));
 
 // Solicita ao MediatR que enderece o processamento da option. 
 async Task ExecutarAsync(object option)
@@ -80,11 +72,19 @@ static async Task ExecuteOption(object options, ServiceProvider serviceProvider)
 
 static void PrintPresentation(int option)
 {
-    string text = "";
+    var beforeColor = Console.ForegroundColor;
+    Console.ForegroundColor = ConsoleColor.DarkGray;
+    Console.WriteLine(GetPresentation(1));
+    Console.ForegroundColor = beforeColor;
+}
+
+static string GetPresentation(int option)
+{
+    string presentationText = "";
 
     if (option == 1)
     {
-        text = @"
+        presentationText = @"
 ██╗░░██╗░█████╗░███████╗██╗░░██╗░█████╗░
 ██║░██╔╝██╔══██╗██╔════╝██║░██╔╝██╔══██╗
 █████═╝░███████║█████╗░░█████═╝░███████║
@@ -98,18 +98,17 @@ static void PrintPresentation(int option)
 ██║██║╚████║░╚████╔╝░██╔══╝░░░╚═══██╗░░░██║░░░██║██║░░╚██╗██╔══██║░░░██║░░░██║░░██║██╔══██╗
 ██║██║░╚███║░░╚██╔╝░░███████╗██████╔╝░░░██║░░░██║╚██████╔╝██║░░██║░░░██║░░░╚█████╔╝██║░░██║
 ╚═╝╚═╝░░╚══╝░░░╚═╝░░░╚══════╝╚═════╝░░░░╚═╝░░░╚═╝░╚═════╝░╚═╝░░╚═╝░░░╚═╝░░░░╚════╝░╚═╝░░╚═╝
-        ";
+
+";
     }
     else
     {
-        text = @"
+        presentationText = @"
 █▄▀ ▄▀█ █▀▀ █▄▀ ▄▀█   █ █▄░█ █░█ █▀▀ █▀ ▀█▀ █ █▀▀ ▄▀█ ▀█▀ █▀█ █▀█
 █░█ █▀█ █▀░ █░█ █▀█   █ █░▀█ ▀▄▀ ██▄ ▄█ ░█░ █ █▄█ █▀█ ░█░ █▄█ █▀▄
+
 ";
     }
 
-    var beforeColor = Console.ForegroundColor;
-    Console.ForegroundColor = ConsoleColor.DarkGray;
-    Console.WriteLine(text);
-    Console.ForegroundColor = beforeColor;
+    return presentationText;
 }

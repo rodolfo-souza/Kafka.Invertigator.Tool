@@ -2,7 +2,6 @@
 using Kafka.Investigator.Tool.Options.ProfileOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
 using Kafka.Investigator.Tool.UserInterations;
-using Kafka.Investigator.Tool.UserInterations.ConsumerInterations;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -10,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Kafka.Investigator.Tool.OptionsHandlers
+namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 {
     internal class ConsumerStartOptionsHandler : IRequestHandler<ConsumerStartOptions>,
                                                  IRequestHandler<ConsumerProfileStartOptions>

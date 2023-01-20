@@ -18,6 +18,8 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
         private readonly InvestigatorConsumerBuilder _consumerBuilder;
         private readonly InvestigatorSchemaRegistryBuilder _schemaRegistryBuilder;
 
+        private const int TimeoutSeconds = 10;
+
         public ConsumerStartInteraction(InvestigatorConsumerBuilder consumerBuilder, InvestigatorSchemaRegistryBuilder schemaRegistryBuilder)
         {
             _consumerBuilder = consumerBuilder;
@@ -29,7 +31,10 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             try
             {
                 var consumer = CreateConsumer(consumerStartRequest);
-                var usingSchemaRegistry = TryCreateSchemaRegistry(consumerStartRequest, out ISchemaRegistryClient schemaRegistry);
+
+                var usingSchemaRegistry = TryCreateSchemaRegistryClient(consumerStartRequest, out ISchemaRegistryClient schemaRegistry);
+                if (!usingSchemaRegistry)
+                    UserInteractionsHelper.WriteWarning("Consume will continue without schema registry information.");
 
                 if (UserInteractionsHelper.RequestYesNoResponse("Confirm consumer start?") != "Y")
                 { 
@@ -41,11 +46,11 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    PrintConsumerCurrentAssignment(consumer);
+                    ConsumerPrintServices.PrintConsumerCurrentAssignment(consumer);
 
-                    UserInteractionsHelper.WriteDebug($"Waiting for new messages from topic [{consumerStartRequest.TopicName}] (timeout 10s)...");
+                    UserInteractionsHelper.WriteDebug($"Waiting for new messages from topic [{consumerStartRequest.TopicName}] (timeout {TimeoutSeconds}s)...");
 
-                    var consumerResult = consumer.Consume(TimeSpan.FromSeconds(10));
+                    var consumerResult = consumer.Consume(TimeSpan.FromSeconds(TimeoutSeconds));
 
                     if (consumerResult == null)
                     {
@@ -54,52 +59,19 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     }
 
                     UserInteractionsHelper.WriteSuccess("===>>> Message received.");
-                    
-                    PrintConsumerResultData(consumerResult);
+
+                    ConsumerPrintServices.PrintConsumerResultData(consumerResult);
 
                     bool isKeyAvro = IsAvroMessage(consumerResult.Message.Key, out int? keySchemaId);
                     bool isValueAvro = IsAvroMessage(consumerResult.Message.Value, out int? valueSchemaId);
 
-                    PrintRawMessagePreview(consumerResult, isKeyAvro, keySchemaId, isValueAvro, valueSchemaId);
+                    ConsumerPrintServices.PrintRawMessagePreview(consumerResult, isKeyAvro, keySchemaId, isValueAvro, valueSchemaId);
 
                     if (usingSchemaRegistry && (isKeyAvro || isValueAvro))
-                        PrintAvroSchemas(schemaRegistry, keySchemaId, valueSchemaId);
+                        ConsumerPrintServices.PrintAvroSchemas(schemaRegistry, keySchemaId, valueSchemaId);
 
-                    // User actions
-                    bool stopConsumer = false;
-                    bool readNext = false;
-                    while (!stopConsumer && !readNext)
-                    {
-                        var userOption = RequestUserNextAction();
-
-                        switch (userOption)
-                        {
-                            case 1: // Continue
-                                readNext = true;
-                                break;
-                            case 2: // Print Message Key
-                                UserInteractionsHelper.WriteInformation("Raw Message Key");
-                                Console.WriteLine(GetRawValue(consumerResult.Message.Key));
-                                break;
-                            case 3: // Pring Message Value
-                                UserInteractionsHelper.WriteInformation("Raw Message Value");
-                                Console.WriteLine(GetRawValue(consumerResult.Message.Value));
-                                break;
-                            case 4: // Commit Message
-                                if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT?") == "Y")
-                                {
-                                    consumer.Commit(consumerResult);
-                                    UserInteractionsHelper.WriteSuccess("Message commited.");
-                                }
-                                break;
-                            case 5: // Save Message
-                                SaveMessage(consumerResult.Message);
-                                break;
-                            case 6: // Stop Consumer
-                                stopConsumer = true;
-                                break;
-                        }
-                    }
+                    // User options
+                    ProcessUserOptions(consumer, consumerResult, out bool stopConsumer);
 
                     if (stopConsumer)
                         break;
@@ -113,15 +85,6 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             }
         }
 
-        private static void PrintConsumerResultData(ConsumeResult<byte[], byte[]> consumerResult)
-        {
-            var consoleTable = new ConsoleTable("Partition", "Offset");
-
-            consoleTable.AddRow(consumerResult.Partition.Value, consumerResult.Offset.Value);
-
-            consoleTable.WriteWithOptions(title: "Message result", color: ConsoleColor.Blue);
-        }
-
         private IConsumer<byte[], byte[]> CreateConsumer(ConsumerStartRequest consumeStartOptions)
         {
             var consumer = _consumerBuilder.BuildConsumer(consumeStartOptions);
@@ -131,7 +94,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             return consumer;
         }
 
-        private bool TryCreateSchemaRegistry(ConsumerStartRequest consumeStartOptions, out ISchemaRegistryClient schemaRegistryClient)
+        private bool TryCreateSchemaRegistryClient(ConsumerStartRequest consumeStartOptions, out ISchemaRegistryClient schemaRegistryClient)
         {
             schemaRegistryClient = default;
 
@@ -149,7 +112,6 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             catch (Exception ex)
             {
                 UserInteractionsHelper.WriteWarning("Error creating schema registry client: " + ex.Message);
-                UserInteractionsHelper.WriteWarning("Consume will continue without schema registry information.");
                 return false;
             }
         }
@@ -183,82 +145,54 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             return false;
         }
 
-        private static string GetRawValue(byte[] messagePart)
+        private static void ConfirmAndCommitMessage(IConsumer<byte[], byte[]> consumer, ConsumeResult<byte[], byte[]> consumerResult)
         {
-            if (messagePart is null)
-                return "<null>";
-            
-            return Encoding.UTF8.GetString(messagePart);
-        }
-
-        private static void PrintConsumerCurrentAssignment(IConsumer<byte[], byte[]> consumer)
-        {
-            var consoleTable = new ConsoleTable("Partition", "Offset");
-            consoleTable.Options.EnableCount = false;
-
-            foreach (var assignment in consumer.Assignment)
+            if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT?") != "Y")
             {
-                var watermark = consumer.GetWatermarkOffsets(assignment);
-                var partitionOffset = consumer.Position(assignment);
-                consoleTable.AddRow(assignment.Partition.Value, partitionOffset.Value);
+                UserInteractionsHelper.WriteWarning("Commit aborted");
+                return;
             }
 
-            if (!consumer.Assignment.Any())
-                consoleTable.AddRow("[none]", "Waiting for broker (server) assignment...");
-
-            consoleTable.WriteWithOptions(title: "Current consumer assignment");
+            consumer.Commit(consumerResult);
+            UserInteractionsHelper.WriteSuccess("Message commited.");
         }
 
-        private static void PrintRawMessagePreview(ConsumeResult<byte[], byte[]> consumerResult, bool isKeyAvro, int? keySchemaId, bool isValueAvro, int? valueSchemaId)
+        private static bool ProcessUserOptions(IConsumer<byte[], byte[]> consumer, ConsumeResult<byte[], byte[]> consumerResult, out bool stopConsumer)
         {
-            var rawKey = GetRawValue(consumerResult.Message.Key);
-            var rawValue = GetRawValue(consumerResult.Message.Value);
+            stopConsumer = false;
+            bool continueConsuming = false;
 
-            var rawMessageTable = new ConsoleTable("-", "Avro", "SchemaId", "Raw Preview (Avro values are unreadable)");
+            while (!stopConsumer && !continueConsuming)
+            {
+                var userOption = RequestUserOption();
 
-            rawMessageTable.AddRow("Key", isKeyAvro, keySchemaId, rawKey.Limit(150, " [more...]"));
-            rawMessageTable.AddRow("Value", isValueAvro, valueSchemaId, rawValue.Limit(150, " [more...]"));
+                switch (userOption)
+                {
+                    case 1: // Continue consumer
+                        continueConsuming = true;
+                        break;
+                    case 2:
+                        ConsumerPrintServices.PrintRawMessageKey(consumerResult.Message);
+                        break;
+                    case 3:
+                        ConsumerPrintServices.PrintRawMessageValue(consumerResult.Message);
+                        break;
+                    case 4:
+                        ConfirmAndCommitMessage(consumer, consumerResult);
+                        break;
+                    case 5:
+                        ExportMessageService.ExportMessage(consumerResult.Message);
+                        break;
+                    case 6:
+                        stopConsumer = true;
+                        break;
+                }
+            }
 
-            rawMessageTable.WriteWithOptions(title: "Raw Message Preview", color: ConsoleColor.Blue);
+            return stopConsumer;
         }
 
-        private static void PrintAvroSchemas(ISchemaRegistryClient schemaRegistry, int? keySchemaId, int? valueSchemaId)
-        {
-            var consoleTable = new ConsoleTable("-", "SchemaId", "Schema");
-
-            if (keySchemaId != null)
-            {
-                var schema = GetSchema(schemaRegistry, keySchemaId.Value);
-
-                consoleTable.AddRow("Key", keySchemaId, schema.Limit(150, " [more...]"));
-            }
-            
-            if (valueSchemaId != null)
-            {
-                var schema = GetSchema(schemaRegistry, valueSchemaId.Value);
-
-                consoleTable.AddRow("Value", valueSchemaId, schema.Limit(150, " [more...]"));
-            }
-
-            consoleTable.WriteWithOptions(title: "SchemaRegistry information");
-        }
-
-        private static string GetSchema(ISchemaRegistryClient schemaRegistry, int schemaId)
-        {
-            try
-            {
-                var schema = schemaRegistry.GetSchemaAsync(schemaId).Result;
-
-                return schema.SchemaString;
-            }
-            catch (Exception ex)
-            {
-                UserInteractionsHelper.WriteError($"Error trying to get schema for schemaId: {schemaId}: " + ex.Message);
-                return $"fail: {ex.Message}";
-            }
-        }
-
-        private static int RequestUserNextAction()
+        private static int RequestUserOption()
         {
             var validOptions = new[] { "1", "2", "3", "4", "5", "6" };
 
@@ -281,62 +215,6 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 UserInteractionsHelper.WriteError($"Invalid option: [{userOption}]");
             }
             
-        }
-
-        private static void SaveMessage(Message<byte[], byte[]> message)
-        {
-            var stopAsk = false;
-            while(!stopAsk)
-            {
-                try
-                {
-                    var defaultExportPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                    defaultExportPath = Path.Combine(defaultExportPath, "kafkainvestigator_messages");
-
-                    var selectedDirectory = UserInteractionsHelper.RequestInput<string>($"Inform path (default {defaultExportPath})");
-
-                    if (string.IsNullOrEmpty(selectedDirectory))
-                        selectedDirectory = defaultExportPath;
-
-                    if (!Directory.Exists(selectedDirectory))
-                        Directory.CreateDirectory(selectedDirectory);
-
-                    var filePrefix = UserInteractionsHelper.RequestInput<string>("Inform file prefix (ex.: prefix 'abc' will create 'abc-key' and 'abc-value' files)");
-
-                    var keyFilePath = Path.Combine(selectedDirectory, filePrefix + "-key");
-                    var valueFilePath = Path.Combine(selectedDirectory, filePrefix + "-value");
-
-                    if (File.Exists(keyFilePath))
-                    {
-                        var replace = UserInteractionsHelper.RequestYesNoResponse($"File {keyFilePath} already exists. Replace?");
-                        if (replace != "Y")
-                            throw new Exception("Operation cancelled by user.");
-                    }
-
-                    if (File.Exists(valueFilePath))
-                    {
-                        var replace = UserInteractionsHelper.RequestYesNoResponse($"File {valueFilePath} already exists. Replace?");
-                        if (replace != "Y")
-                            throw new Exception("Operation cancelled by user.");
-                    }
-
-                    File.WriteAllBytes(keyFilePath, message.Key);
-                    File.WriteAllBytes(valueFilePath, message.Value);
-
-                    UserInteractionsHelper.WriteSuccess($"Message exported sucessfully to: ");
-                    UserInteractionsHelper.WriteSuccess(keyFilePath);
-                    UserInteractionsHelper.WriteSuccess(valueFilePath);
-
-                    stopAsk = true;
-                }
-                catch (Exception ex)
-                {
-                    UserInteractionsHelper.WriteError(ex.Message);
-
-                    if (UserInteractionsHelper.RequestYesNoResponse("[Export message] Try again?") != "Y")
-                        stopAsk = true;
-                }
-            }
         }
     }
 }
