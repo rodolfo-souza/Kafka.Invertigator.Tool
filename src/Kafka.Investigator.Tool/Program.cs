@@ -14,7 +14,7 @@ using System.Reflection;
 
 Console.ForegroundColor = ConsoleColor.White;
 
-PrintPresentation();
+PrintPresentation(1);
 
 try
 {
@@ -78,10 +78,13 @@ static async Task ExecuteOption(object options, ServiceProvider serviceProvider)
     await mediator.Send(options);
 }
 
-static void PrintPresentation()
+static void PrintPresentation(int option)
 {
-    var text = @"
+    string text = "";
 
+    if (option == 1)
+    {
+        text = @"
 ██╗░░██╗░█████╗░███████╗██╗░░██╗░█████╗░
 ██║░██╔╝██╔══██╗██╔════╝██║░██╔╝██╔══██╗
 █████═╝░███████║█████╗░░█████═╝░███████║
@@ -95,9 +98,18 @@ static void PrintPresentation()
 ██║██║╚████║░╚████╔╝░██╔══╝░░░╚═══██╗░░░██║░░░██║██║░░╚██╗██╔══██║░░░██║░░░██║░░██║██╔══██╗
 ██║██║░╚███║░░╚██╔╝░░███████╗██████╔╝░░░██║░░░██║╚██████╔╝██║░░██║░░░██║░░░╚█████╔╝██║░░██║
 ╚═╝╚═╝░░╚══╝░░░╚═╝░░░╚══════╝╚═════╝░░░░╚═╝░░░╚═╝░╚═════╝░╚═╝░░╚═╝░░░╚═╝░░░░╚════╝░╚═╝░░╚═╝
+        ";
+    }
+    else
+    {
+        text = @"
+█▄▀ ▄▀█ █▀▀ █▄▀ ▄▀█   █ █▄░█ █░█ █▀▀ █▀ ▀█▀ █ █▀▀ ▄▀█ ▀█▀ █▀█ █▀█
+█░█ █▀█ █▀░ █░█ █▀█   █ █░▀█ ▀▄▀ ██▄ ▄█ ░█░ █ █▄█ █▀█ ░█░ █▄█ █▀▄
 ";
+    }
+
     var beforeColor = Console.ForegroundColor;
-    Console.ForegroundColor = ConsoleColor.Blue;
+    Console.ForegroundColor = ConsoleColor.DarkGray;
     Console.WriteLine(text);
     Console.ForegroundColor = beforeColor;
 }

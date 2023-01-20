@@ -79,11 +79,11 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                                 break;
                             case 2: // Print Message Key
                                 UserInteractionsHelper.WriteInformation("Raw Message Key");
-                                Console.WriteLine(Encoding.UTF8.GetString(consumerResult.Message.Key));
+                                Console.WriteLine(GetRawValue(consumerResult.Message.Key));
                                 break;
                             case 3: // Pring Message Value
                                 UserInteractionsHelper.WriteInformation("Raw Message Value");
-                                Console.WriteLine(Encoding.UTF8.GetString(consumerResult.Message.Value));
+                                Console.WriteLine(GetRawValue(consumerResult.Message.Value));
                                 break;
                             case 4: // Commit Message
                                 if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT?") == "Y")
@@ -183,6 +183,14 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             return false;
         }
 
+        private static string GetRawValue(byte[] messagePart)
+        {
+            if (messagePart is null)
+                return "<null>";
+            
+            return Encoding.UTF8.GetString(messagePart);
+        }
+
         private static void PrintConsumerCurrentAssignment(IConsumer<byte[], byte[]> consumer)
         {
             var consoleTable = new ConsoleTable("Partition", "Offset");
@@ -203,11 +211,12 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
         private static void PrintRawMessagePreview(ConsumeResult<byte[], byte[]> consumerResult, bool isKeyAvro, int? keySchemaId, bool isValueAvro, int? valueSchemaId)
         {
-            var rawMessageTable = new ConsoleTable("-", "Avro", "SchemaId", "Raw Preview (Avro values are unreadable)");
-            var rawKey = Encoding.UTF8.GetString(consumerResult.Message.Key);
-            rawMessageTable.AddRow("Key", isKeyAvro, keySchemaId, rawKey.Limit(150, " [more...]"));
+            var rawKey = GetRawValue(consumerResult.Message.Key);
+            var rawValue = GetRawValue(consumerResult.Message.Value);
 
-            var rawValue = Encoding.UTF8.GetString(consumerResult.Message.Value);
+            var rawMessageTable = new ConsoleTable("-", "Avro", "SchemaId", "Raw Preview (Avro values are unreadable)");
+
+            rawMessageTable.AddRow("Key", isKeyAvro, keySchemaId, rawKey.Limit(150, " [more...]"));
             rawMessageTable.AddRow("Value", isValueAvro, valueSchemaId, rawValue.Limit(150, " [more...]"));
 
             rawMessageTable.WriteWithOptions(title: "Raw Message Preview", color: ConsoleColor.Blue);

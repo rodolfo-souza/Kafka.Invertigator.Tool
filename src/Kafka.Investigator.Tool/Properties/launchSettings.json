@@ -2,7 +2,7 @@
   "profiles": {
     "Kafka.Investigator.Tool": {
       "commandName": "Project",
-      "commandLineArgs": "consumer-profile-start -p hml-Teste"
+      "commandLineArgs": "consumer-start -t teste-particao-unica -g consumer1 -c localhost"
     }
   }
 }
