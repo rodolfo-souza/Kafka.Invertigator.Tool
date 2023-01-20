@@ -1,15 +1,7 @@
 ﻿using Confluent.Kafka;
 using Confluent.SchemaRegistry;
-using ConsoleTables;
 using Kafka.Investigator.Tool.KafkaObjects;
-using Kafka.Investigator.Tool.Options.ConsumerOptions;
-using Kafka.Investigator.Tool.Util;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 {

@@ -5,7 +5,6 @@ using Kafka.Investigator.Tool.KafkaObjects;
 using Kafka.Investigator.Tool.Options.ConsumerOptions;
 using Kafka.Investigator.Tool.Options.ProfileOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
-using Kafka.Investigator.Tool.UserInterations;
 using Kafka.Investigator.Tool.UserInterations.ConsumerInterations;
 using Kafka.Investigator.Tool.UserInterations.ProfileInteractions;
 using MediatR;
