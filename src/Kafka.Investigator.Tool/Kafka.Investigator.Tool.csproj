@@ -7,6 +7,9 @@
 		<Nullable>enable</Nullable>
 		<PackAsTool>true</PackAsTool>
 		<ToolCommandName>kafkai</ToolCommandName>
+		<PackageId>Kafka.Investigator</PackageId>
+		<Authors>rodolfo.souza</Authors>
+		<Description>Simple CLI for topic consuming.</Description>
 	</PropertyGroup>
 
 	<ItemGroup>
