@@ -1,1 +1,1 @@
-# Kafka.Invertigator.Tool
+# Kafka.Investigator.Tool
