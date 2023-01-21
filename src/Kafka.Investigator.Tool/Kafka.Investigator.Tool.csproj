@@ -10,6 +10,7 @@
 		<PackageId>Kafka.Investigator</PackageId>
 		<Authors>rodolfo.souza</Authors>
 		<Description>Simple CLI for topic consuming.</Description>
+		<Version>2.0.1</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -1,6 +1,5 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using CommandLine;
+﻿using CommandLine;
+using Kafka.Investigator.Tool.Attributes;
 using Kafka.Investigator.Tool.KafkaObjects;
 using Kafka.Investigator.Tool.Options.ConsumerOptions;
 using Kafka.Investigator.Tool.Options.ProfileOptions;
@@ -11,41 +10,57 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
-Console.ForegroundColor = ConsoleColor.White;
+IServiceProvider services = BuildSeviceProvider();
+IMediator mediator = services.GetService<IMediator>();
+int currentParserLevel = 0;
 
+Console.ForegroundColor = ConsoleColor.White;
 PrintPresentation(1);
 
-var parsedValue = Parser.Default.ParseArguments<ConnectionAddOptions,
-                                                ConnectionListOptions,
-                                                ConnectionDelOptions,
-                                                SchemaRegistryAddOptions,
-                                                SchemaRegistryListOptions,
-                                                SchemaRegistryDelOptions,
-                                                ConsumerProfileAddOptions,
-                                                ConsumerProfileListOptions,
-                                                ConsumerProfileDelOptions,
-                                                ConsumerProfileStartOptions,
-                                                ConsumerStartOptions>(args);
+ParseArgumentsWithSubVerbs(args, typeof(ConnectionOptions), 
+                                 typeof(SchemaRegistryOptions), 
+                                 typeof(ConsumerProfileOptions), 
+                                 typeof(ConsumerOptions));
 
-parsedValue.WithParsed(async options => await ExecutarAsync(options))
-           .WithNotParsed(errors => Console.WriteLine(string.Join("\n", errors)));
+void ParseArgumentsWithSubVerbs(string[] args, params Type[] types)
+{
+    currentParserLevel++;
 
-// Solicita ao MediatR que enderece o processamento da option. 
-async Task ExecutarAsync(object option)
+    var parser = new Parser(c =>
+    {
+        c.HelpWriter = Parser.Default.Settings.HelpWriter;
+        c.IgnoreUnknownArguments = currentParserLevel == 1;
+    });
+
+    var parserResult = parser.ParseArguments(args, types);
+
+    parserResult.WithParsed(async selectedOption =>
+    {
+        var selectedOptionType = selectedOption.GetType();
+
+        Type[]? subVerbsTypes = Assembly.GetExecutingAssembly()
+                                        .GetTypes()
+                                        .Where(t => t.GetCustomAttribute<SubVerbAttribute>()?.BaseVerb == selectedOptionType)
+                                        .ToArray();
+
+        if (!subVerbsTypes.Any())
+            await mediator?.Send(selectedOption);
+        else
+            ParseArgumentsWithSubVerbs(args[1..], subVerbsTypes);
+    });
+}
+
+IServiceProvider BuildSeviceProvider()
 {
     var services = new ServiceCollection();
 
     ConfigureServices(services);
 
-    var serviceProvider = services.BuildServiceProvider();
-
-    await ExecuteOption(option, serviceProvider);
+    return services.BuildServiceProvider();
 }
 
 void ConfigureServices(IServiceCollection services)
 {
-    // Configura serviços da aplicação.
-
     services.AddMediatR(Assembly.GetExecutingAssembly());
     services.AddSingleton<InvestigatorConsumerBuilder>();
     services.AddSingleton<InvestigatorSchemaRegistryBuilder>();
@@ -57,16 +72,6 @@ void ConfigureServices(IServiceCollection services)
     services.AddSingleton<ConsumerProfileAddInteraction>();
     services.AddSingleton<ConsumerProfileDelInteraction>();
     services.AddSingleton<ConsumerStartInteraction>();
-}
-
-static async Task ExecuteOption(object options, ServiceProvider serviceProvider)
-{
-    var mediator = serviceProvider.GetService<IMediator>();
-
-    if (mediator == null)
-        throw new Exception("MediatR was not configured properly.");
-
-    await mediator.Send(options);
 }
 
 static void PrintPresentation(int option)

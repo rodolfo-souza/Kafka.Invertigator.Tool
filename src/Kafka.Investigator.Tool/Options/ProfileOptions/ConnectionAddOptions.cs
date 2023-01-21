@@ -1,9 +1,9 @@
-﻿using CommandLine;
+﻿using Kafka.Investigator.Tool.Attributes;
 using MediatR;
 
 namespace Kafka.Investigator.Tool.Options.ProfileOptions
 {
-    [Verb("connection-add", HelpText = "Add or replace a connection.")]
+    [SubVerb(typeof(ConnectionOptions), "add", HelpText = "Add or replace a connection.")]
     internal class ConnectionAddOptions : IRequest
     {
     }

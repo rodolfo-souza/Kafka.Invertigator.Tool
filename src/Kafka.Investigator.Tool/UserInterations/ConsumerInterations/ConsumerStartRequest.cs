@@ -33,8 +33,8 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             ConnectionName = consumeStartOptions.ConnectionName;
             TopicName = consumeStartOptions.TopicName;
             GroupId = consumeStartOptions.GroupId;
-            AutoOffset = consumeStartOptions.AutoOffset;
-            UseSchemaRegistry = consumeStartOptions.UseSchemaRegistry;
+            AutoOffset = consumeStartOptions.AutoOffsetReset;
+            UseSchemaRegistry = !consumeStartOptions.IgnoreSchemaRegistry;
             SchemaRegistryName = consumeStartOptions.SchemaRegistryName;
         }
     }

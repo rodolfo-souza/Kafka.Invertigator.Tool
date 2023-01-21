@@ -1,9 +1,9 @@
-﻿using CommandLine;
+﻿using Kafka.Investigator.Tool.Attributes;
 using MediatR;
 
 namespace Kafka.Investigator.Tool.Options.ProfileOptions
 {
-    [Verb("schema-registry-list", HelpText = "List all schema registries configured for user.")]
+    [SubVerb(typeof(SchemaRegistryOptions), "list", HelpText = "List all schema registries configured for user.")]
     internal class SchemaRegistryListOptions : IRequest
     {
     }

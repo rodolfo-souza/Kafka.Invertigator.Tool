@@ -1,9 +1,9 @@
-﻿using CommandLine;
+﻿using Kafka.Investigator.Tool.Attributes;
 using MediatR;
 
 namespace Kafka.Investigator.Tool.Options.ProfileOptions
 {
-    [Verb("schema-registry-add", HelpText = "Add or replace a SchemaRegistry configuration for BasicAuthentication.")]
+    [SubVerb(typeof(SchemaRegistryOptions), "add", HelpText = "Add or replace a SchemaRegistry configuration for BasicAuthentication.")]
     internal class SchemaRegistryAddOptions : IRequest
     {
     }

@@ -28,7 +28,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 if (!usingSchemaRegistry)
                     UserInteractionsHelper.WriteWarning("Consume will continue without schema registry information.");
 
-                if (UserInteractionsHelper.RequestYesNoResponse("Confirm consumer start?") != "Y")
+                if (UserInteractionsHelper.RequestYesNoResponse("Start reading messages?") != "Y")
                 { 
                     UserInteractionsHelper.WriteWarning("Operation aborted.");
                     return;
