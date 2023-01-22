@@ -10,11 +10,11 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
     {
         internal static void PrintConsumerResultData(ConsumeResult<byte[], byte[]> consumerResult)
         {
-            var consoleTable = new ConsoleTable("Partition", "Offset");
+            var consoleTable = new ConsoleTable("Partition", "Offset", "Timestamp");
 
-            consoleTable.AddRow(consumerResult.Partition.Value, consumerResult.Offset.Value);
+            consoleTable.AddRow(consumerResult.Partition.Value, consumerResult.Offset.Value, consumerResult.Message.Timestamp.UtcDateTime.ToLocalTime());
 
-            consoleTable.WriteWithOptions(title: "Consume result", color: ConsoleColor.Blue);
+            consoleTable.WriteWithOptions(title: "Consume result", color: ConsoleColor.Blue, format: Format.Minimal);
         }
 
         internal static void PrintConsumerCurrentAssignment(IConsumer<byte[], byte[]> consumer)
@@ -32,7 +32,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             if (!consumer.Assignment.Any())
                 consoleTable.AddRow("[none]", "Waiting for broker (server) assignment...");
 
-            consoleTable.WriteWithOptions(title: "Current consumer assignment");
+            consoleTable.WriteWithOptions(title: "Current consumer assignment", format: Format.Minimal);
         }
 
         internal static void PrintRawMessagePreview(ConsumeResult<byte[], byte[]> consumerResult, bool isKeyAvro, int? keySchemaId, bool isValueAvro, int? valueSchemaId)
@@ -42,10 +42,10 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
             var rawMessageTable = new ConsoleTable("-", "Avro", "SchemaId", "Raw Preview (Avro values are unreadable)");
 
-            rawMessageTable.AddRow("Key", isKeyAvro, keySchemaId, rawKey.Limit(150, " [more...]"));
-            rawMessageTable.AddRow("Value", isValueAvro, valueSchemaId, rawValue.Limit(150, " [more...]"));
+            rawMessageTable.AddRow("Key", isKeyAvro, keySchemaId, rawKey.Limit(170, " [more...]"));
+            rawMessageTable.AddRow("Value", isValueAvro, valueSchemaId, rawValue.Limit(170, " [more...]"));
 
-            rawMessageTable.WriteWithOptions(title: "Raw Message Preview", color: ConsoleColor.Blue);
+            rawMessageTable.WriteWithOptions(title: "Raw Message Preview", color: ConsoleColor.Blue, format: Format.Minimal);
         }
 
         internal static void PrintAvroSchemas(ISchemaRegistryClient schemaRegistry, int? keySchemaId, int? valueSchemaId)

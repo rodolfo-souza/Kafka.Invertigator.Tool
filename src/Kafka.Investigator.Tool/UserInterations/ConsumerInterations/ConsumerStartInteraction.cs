@@ -22,7 +22,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
         {
             try
             {
-                var consumer = CreateConsumer(consumerStartRequest);
+                using var consumer = CreateConsumer(consumerStartRequest);
 
                 var usingSchemaRegistry = TryCreateSchemaRegistryClient(consumerStartRequest, out ISchemaRegistryClient schemaRegistry);
                 if (!usingSchemaRegistry)
