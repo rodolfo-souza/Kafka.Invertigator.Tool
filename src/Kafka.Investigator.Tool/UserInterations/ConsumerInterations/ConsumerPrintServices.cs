@@ -99,7 +99,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 consoleTable.AddRow("Value", valueSchemaId, schema.Limit(150, " [more...]"));
             }
 
-            consoleTable.WriteWithOptions(title: "SchemaRegistry information");
+            consoleTable.WriteWithOptions(title: "SchemaRegistry information", format: Format.Minimal);
         }
 
         internal static void PrintRawMessageKey(Message<byte[], byte[]> message)

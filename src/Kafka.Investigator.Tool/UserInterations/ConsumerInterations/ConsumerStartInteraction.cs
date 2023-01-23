@@ -10,6 +10,9 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
         private readonly InvestigatorConsumerBuilder _consumerBuilder;
         private readonly InvestigatorSchemaRegistryBuilder _schemaRegistryBuilder;
 
+        private ISchemaRegistryClient _schemaRegistryClient = null;
+        private ConsumerStartRequest _consumerStartRequest = null;
+
         private const int TimeoutSeconds = 10;
 
         public ConsumerStartInteraction(InvestigatorConsumerBuilder consumerBuilder, InvestigatorSchemaRegistryBuilder schemaRegistryBuilder)
@@ -20,11 +23,12 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
         public void StartConsume(ConsumerStartRequest consumerStartRequest, CancellationToken cancellationToken)
         {
+            _consumerStartRequest = consumerStartRequest;
             try
             {
                 using var consumer = _consumerBuilder.BuildConsumer(consumerStartRequest, printConsumerParameters: true);
 
-                var usingSchemaRegistry = TryCreateSchemaRegistryClient(consumerStartRequest, out ISchemaRegistryClient schemaRegistryClient);
+                var usingSchemaRegistry = TryCreateSchemaRegistryClient(consumerStartRequest, out _schemaRegistryClient);
                 if (!usingSchemaRegistry)
                     UserInteractionsHelper.WriteWarning("Consume will continue without schema registry information.");
 
@@ -53,12 +57,6 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     ConsumerPrintServices.PrintConsumerResultData(consumerResult);
 
                     ConsumerPrintServices.PrintRawMessagePreview(consumerResult);
-
-                    bool isKeyAvro = consumerResult.Message.Key.IsAvro(out int? keySchemaId);
-                    bool isValueAvro = consumerResult.Message.Value.IsAvro(out int? valueSchemaId);
-
-                    if (usingSchemaRegistry && (isKeyAvro || isValueAvro))
-                        ConsumerPrintServices.PrintAvroSchemas(schemaRegistryClient, keySchemaId, valueSchemaId);
 
                     // User options
                     ProcessUserOptions(consumer, consumerResult, out bool stopConsumer);
@@ -109,7 +107,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             UserInteractionsHelper.WriteSuccess("Message commited.");
         }
 
-        private static bool ProcessUserOptions(IConsumer<byte[], byte[]> consumer, ConsumeResult<byte[], byte[]> consumerResult, out bool stopConsumer)
+        private bool ProcessUserOptions(IConsumer<byte[], byte[]> consumer, ConsumeResult<byte[], byte[]> consumerResult, out bool stopConsumer)
         {
             stopConsumer = false;
             bool continueConsuming = false;
@@ -133,6 +131,9 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                         ConsumerPrintServices.PrintConsumerResultData(consumerResult);
                         ConsumerPrintServices.PrintRawMessagePreview(consumerResult);
                         break;
+                    case "R":
+                        PrintAvroSchemas(consumerResult.Message);
+                        break;
                     case "C":
                         ConfirmAndCommitMessage(consumer, consumerResult);
                         break;
@@ -151,11 +152,13 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             return stopConsumer;
         }
 
-        private static string RequestUserOption()
+        private string RequestUserOption()
         {
-            var validOptions = new[] { "N", "K", "V", "M", "H", "C", "S", "Q" };
+            var validOptions = new[] { "N", "K", "V", "M", "R" ,"H", "C", "S", "Q" };
 
-            while(true)
+            string schemaRegistryObs = _schemaRegistryClient is null ? $"(disabled: no schema registry selected)" : $"(using schema registry [{_consumerStartRequest.SchemaRegistryName}])";
+
+            while (true)
             {
                 UserInteractionsHelper.WriteEmptyLine();
                 UserInteractionsHelper.WriteWithColor("===>>> MESSAGE OPTIONS:", ConsoleColor.Yellow);
@@ -164,6 +167,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 UserInteractionsHelper.WriteWithColor("V - Print Value (full)", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("H - Print Message Headers", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("M - RePrint Message Preview", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("R - Print Message Schemas " + schemaRegistryObs, ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("C - Commit message offset", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("S - Save message (export as file)", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("Q - Quit (stop consumer)", ConsoleColor.Yellow);
@@ -178,6 +182,26 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 UserInteractionsHelper.WriteError($"Invalid option.");
             }
             
+        }
+
+        private void PrintAvroSchemas(Message<byte[], byte[]> message)
+        {
+            if (_schemaRegistryClient == null)
+            {
+                UserInteractionsHelper.WriteError("There's no Schema Registry configured for consumer. Try restart consumer with option --schema-registry <SCHEMA_NAME>.");
+                return;
+            }
+
+            bool isKeyAvro = message.Key.IsAvro(out int? keySchemaId);
+            bool isValueAvro = message.Value.IsAvro(out int? valueSchemaId);
+
+            if (!isKeyAvro && !isValueAvro)
+            {
+                UserInteractionsHelper.WriteError("Both Key and Value do not contains SchemaId.");
+                return;
+            }
+
+            ConsumerPrintServices.PrintAvroSchemas(_schemaRegistryClient, keySchemaId, valueSchemaId);
         }
     }
 }
