@@ -15,7 +15,7 @@ namespace Kafka.Investigator.Tool.KafkaObjects
             _profileRepository = profileRepository;
         }
 
-        public ISchemaRegistryClient BuildSchemaRegistryClient(string? schemaRegistryName = null)
+        public ISchemaRegistryClient BuildSchemaRegistryClient(string? schemaRegistryName = null, bool printSchemaRegistryParameters = true)
         {
             var schemaProfile = GetSchemaRegistryProfile(schemaRegistryName);
 
@@ -27,7 +27,8 @@ namespace Kafka.Investigator.Tool.KafkaObjects
                 BasicAuthUserInfo = $"{schemaProfile.UserName}:{schemaProfile.Password}"
             };
             
-            PrintSchemaRegistryParameters(schemaProfile);
+            if (printSchemaRegistryParameters)
+                PrintSchemaRegistryParameters(schemaProfile);
 
             return new CachedSchemaRegistryClient(schemaRegistryConfig);
         }
@@ -62,7 +63,7 @@ namespace Kafka.Investigator.Tool.KafkaObjects
             consoleTable.AddRow("Url", schemaProfile.Url);
             consoleTable.AddRow("Username", schemaProfile.UserName);
 
-            consoleTable.WriteWithOptions(title: "SchemaRegistry parameters");
+            consoleTable.WriteWithOptions(title: "SchemaRegistry parameters", format: Format.Minimal);
         }
     }
 }

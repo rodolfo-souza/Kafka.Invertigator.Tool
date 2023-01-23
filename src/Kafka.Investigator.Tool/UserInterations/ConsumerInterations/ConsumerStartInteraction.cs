@@ -22,7 +22,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
         {
             try
             {
-                using var consumer = CreateConsumer(consumerStartRequest);
+                using var consumer = _consumerBuilder.BuildConsumer(consumerStartRequest, printConsumerParameters: true);
 
                 var usingSchemaRegistry = TryCreateSchemaRegistryClient(consumerStartRequest, out ISchemaRegistryClient schemaRegistryClient);
                 if (!usingSchemaRegistry)
@@ -50,14 +50,12 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                         continue;
                     }
 
-                    UserInteractionsHelper.WriteSuccess("===>>> Message received.");
-
                     ConsumerPrintServices.PrintConsumerResultData(consumerResult);
 
-                    bool isKeyAvro = consumerResult.Message.Key.IsAvro(out int ? keySchemaId);
-                    bool isValueAvro = consumerResult.Message.Value.IsAvro(out int? valueSchemaId);
+                    ConsumerPrintServices.PrintRawMessagePreview(consumerResult);
 
-                    ConsumerPrintServices.PrintRawMessagePreview(consumerResult, isKeyAvro, keySchemaId, isValueAvro, valueSchemaId);
+                    bool isKeyAvro = consumerResult.Message.Key.IsAvro(out int? keySchemaId);
+                    bool isValueAvro = consumerResult.Message.Value.IsAvro(out int? valueSchemaId);
 
                     if (usingSchemaRegistry && (isKeyAvro || isValueAvro))
                         ConsumerPrintServices.PrintAvroSchemas(schemaRegistryClient, keySchemaId, valueSchemaId);
@@ -77,15 +75,6 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             }
         }
 
-        private IConsumer<byte[], byte[]> CreateConsumer(ConsumerStartRequest consumeStartOptions)
-        {
-            var consumer = _consumerBuilder.BuildConsumer(consumeStartOptions);
-
-            UserInteractionsHelper.WriteInformation("Consumer created...");
-
-            return consumer;
-        }
-
         private bool TryCreateSchemaRegistryClient(ConsumerStartRequest consumeStartOptions, out ISchemaRegistryClient schemaRegistryClient)
         {
             schemaRegistryClient = default;
@@ -98,7 +87,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
             try
             {
-                schemaRegistryClient = _schemaRegistryBuilder.BuildSchemaRegistryClient(consumeStartOptions.SchemaRegistryName);
+                schemaRegistryClient = _schemaRegistryBuilder.BuildSchemaRegistryClient(consumeStartOptions.SchemaRegistryName, printSchemaRegistryParameters: true);
                 return true;
             }
             catch (Exception ex)
@@ -137,8 +126,12 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     case "K":
                         ConsumerPrintServices.PrintRawMessageKey(consumerResult.Message);
                         break;
-                    case "M":
+                    case "V":
                         ConsumerPrintServices.PrintRawMessageValue(consumerResult.Message);
+                        break;
+                    case "M":
+                        ConsumerPrintServices.PrintConsumerResultData(consumerResult);
+                        ConsumerPrintServices.PrintRawMessagePreview(consumerResult);
                         break;
                     case "C":
                         ConfirmAndCommitMessage(consumer, consumerResult);
@@ -149,7 +142,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     case "H":
                         ConsumerPrintServices.PrintMessageHeaders(consumerResult.Message);
                         break;
-                    case "E":
+                    case "Q":
                         stopConsumer = true;
                         break;
                 }
@@ -160,7 +153,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
         private static string RequestUserOption()
         {
-            var validOptions = new[] { "N", "K", "M", "H", "C", "S", "E" };
+            var validOptions = new[] { "N", "K", "V", "M", "H", "C", "S", "Q" };
 
             while(true)
             {
@@ -168,11 +161,12 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 UserInteractionsHelper.WriteWithColor("===>>> MESSAGE OPTIONS:", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("N - Continue consuming (without commit)", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("K - Print Key (full)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("M - Print Value (full)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("V - Print Value (full)", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("H - Print Message Headers", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("M - RePrint Message Preview", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("C - Commit message offset", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("S - Save message (export as file)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("E - Finish consumer", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("Q - Quit (stop consumer)", ConsoleColor.Yellow);
 
                 var userOption = UserInteractionsHelper.RequestUserResponseKey("Select an option: ", ConsoleColor.Yellow, responseToUpper: true);
 

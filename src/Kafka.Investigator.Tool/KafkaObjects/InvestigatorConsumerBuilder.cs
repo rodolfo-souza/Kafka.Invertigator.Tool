@@ -16,13 +16,14 @@ namespace Kafka.Investigator.Tool.KafkaObjects
             _profileRepository = profileRepository;
         }
 
-        public IConsumer<byte[], byte[]> BuildConsumer(ConsumerStartRequest consumerStartRequest)
+        public IConsumer<byte[], byte[]> BuildConsumer(ConsumerStartRequest consumerStartRequest, bool printConsumerParameters = true)
         {
             var connectionProfile = GetConnectionProfile(consumerStartRequest.ConnectionName);
 
             var consumerConfig = CreateConsumerConfig(connectionProfile, consumerStartRequest.GroupId, consumerStartRequest.AutoOffset);
 
-            PrintConsumerConfig(consumerStartRequest, consumerConfig);
+            if (printConsumerParameters)
+                ConsumerPrintServices.PrintConsumerConfig(consumerStartRequest, consumerConfig);
 
             return BuildConsumerForTopic(consumerConfig, consumerStartRequest.TopicName);
         }
@@ -103,36 +104,6 @@ namespace Kafka.Investigator.Tool.KafkaObjects
             consumer.Subscribe(topicName);
 
             return consumer;
-        }
-
-        private static void PrintConsumerConfig(ConsumerStartRequest consumerStartRequest, ConsumerConfig consumerConfig)
-        {
-            var consoleTable = new ConsoleTable("Parameter", "Value");
-
-            consoleTable.AddRow("Topic", consumerStartRequest.TopicName);
-            consoleTable.AddRow("GroupId", consumerConfig.GroupId);
-
-            consoleTable.AddRow("BootstrapServers", consumerConfig.BootstrapServers);
-            consoleTable.AddRow("SaslUsername", consumerConfig.SaslUsername);
-            consoleTable.AddRow("SaslMechanism", consumerConfig.SaslMechanism);
-            consoleTable.AddRow("SecurityProtocol", consumerConfig.SecurityProtocol);
-            consoleTable.AddRow("EnableSslCertificateVerification", consumerConfig.EnableSslCertificateVerification);
-
-            consoleTable.AddRow("AutoOffsetReset", consumerConfig.AutoOffsetReset);
-            consoleTable.AddRow("EnableAutoCommit", consumerConfig.EnableAutoCommit);
-            consoleTable.AddRow("ClientId", consumerConfig.ClientId);
-            consoleTable.AddRow("ConnectionsMaxIdleMs", consumerConfig.ConnectionsMaxIdleMs);
-            consoleTable.AddRow("TopicMetadataRefreshIntervalMs", consumerConfig.TopicMetadataRefreshIntervalMs);
-            consoleTable.AddRow("MetadataMaxAgeMs", consumerConfig.MetadataMaxAgeMs);
-            consoleTable.AddRow("SocketTimeoutMs", consumerConfig.SocketTimeoutMs);
-
-            consoleTable.AddRow("Acks", consumerConfig.Acks);
-            consoleTable.AddRow("EnableAutoOffsetStore", consumerConfig.EnableAutoOffsetStore);
-            consoleTable.AddRow("BrokerAddressFamily", consumerConfig.BrokerAddressFamily);
-            consoleTable.AddRow("SocketKeepaliveEnable", consumerConfig.SocketKeepaliveEnable);
-
-            consoleTable.Options.EnableCount = false;
-            consoleTable.WriteWithOptions(title: "Consumer Config");
         }
     }
 }

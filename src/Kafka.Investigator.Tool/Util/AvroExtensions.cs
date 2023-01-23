@@ -8,7 +8,8 @@ using System.Threading.Tasks;
 namespace Kafka.Investigator.Tool.Util
 {
     internal static class AvroExtensions
-    {        
+    {
+        public static bool IsAvro(this byte[] messagePart) => IsAvro(messagePart, out int? _);
         public static bool IsAvro(this byte[] messagePart, out int? schemaId)
         {
             // Constant used for AvroSerializer.

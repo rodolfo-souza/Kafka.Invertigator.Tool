@@ -8,13 +8,43 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 {
     internal class ConsumerPrintServices
     {
+        internal static void PrintConsumerConfig(ConsumerStartRequest consumerStartRequest, ConsumerConfig consumerConfig)
+        {
+            var consoleTable = new ConsoleTable("Parameter", "Value");
+
+            consoleTable.AddRow("Topic", consumerStartRequest.TopicName);
+            consoleTable.AddRow("GroupId", consumerConfig.GroupId);
+
+            consoleTable.AddRow("BootstrapServers", consumerConfig.BootstrapServers);
+            consoleTable.AddRow("SaslUsername", consumerConfig.SaslUsername);
+            consoleTable.AddRow("SaslMechanism", consumerConfig.SaslMechanism);
+            consoleTable.AddRow("SecurityProtocol", consumerConfig.SecurityProtocol);
+            consoleTable.AddRow("EnableSslCertificateVerification", consumerConfig.EnableSslCertificateVerification);
+
+            consoleTable.AddRow("AutoOffsetReset", consumerConfig.AutoOffsetReset);
+            consoleTable.AddRow("EnableAutoCommit", consumerConfig.EnableAutoCommit);
+            consoleTable.AddRow("ClientId", consumerConfig.ClientId);
+            consoleTable.AddRow("ConnectionsMaxIdleMs", consumerConfig.ConnectionsMaxIdleMs);
+            consoleTable.AddRow("TopicMetadataRefreshIntervalMs", consumerConfig.TopicMetadataRefreshIntervalMs);
+            consoleTable.AddRow("MetadataMaxAgeMs", consumerConfig.MetadataMaxAgeMs);
+            consoleTable.AddRow("SocketTimeoutMs", consumerConfig.SocketTimeoutMs);
+
+            consoleTable.AddRow("Acks", consumerConfig.Acks);
+            consoleTable.AddRow("EnableAutoOffsetStore", consumerConfig.EnableAutoOffsetStore);
+            consoleTable.AddRow("BrokerAddressFamily", consumerConfig.BrokerAddressFamily);
+            consoleTable.AddRow("SocketKeepaliveEnable", consumerConfig.SocketKeepaliveEnable);
+
+            consoleTable.Options.EnableCount = false;
+            consoleTable.WriteWithOptions(title: "Consumer Config", format: Format.Minimal);
+        }
+
         internal static void PrintConsumerResultData(ConsumeResult<byte[], byte[]> consumerResult)
         {
             var consoleTable = new ConsoleTable("Partition", "Offset", "Timestamp");
 
             consoleTable.AddRow(consumerResult.Partition.Value, consumerResult.Offset.Value, consumerResult.Message.Timestamp.UtcDateTime.ToLocalTime());
 
-            consoleTable.WriteWithOptions(title: "Consume result", color: ConsoleColor.Blue, format: Format.Minimal);
+            consoleTable.WriteWithOptions(title: "Message Received", color: ConsoleColor.Green, format: Format.Minimal);
         }
 
         internal static void PrintConsumerCurrentAssignment(IConsumer<byte[], byte[]> consumer)
@@ -35,8 +65,11 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             consoleTable.WriteWithOptions(title: "Current consumer assignment", format: Format.Minimal);
         }
 
-        internal static void PrintRawMessagePreview(ConsumeResult<byte[], byte[]> consumerResult, bool isKeyAvro, int? keySchemaId, bool isValueAvro, int? valueSchemaId)
+        internal static void PrintRawMessagePreview(ConsumeResult<byte[], byte[]> consumerResult)
         {
+            bool isKeyAvro = consumerResult.Message.Key.IsAvro(out int? keySchemaId);
+            bool isValueAvro = consumerResult.Message.Value.IsAvro(out int? valueSchemaId);
+
             var rawKey = GetRawValue(consumerResult.Message.Key);
             var rawValue = GetRawValue(consumerResult.Message.Value);
 
@@ -45,7 +78,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             rawMessageTable.AddRow("Key", isKeyAvro, keySchemaId, rawKey.Limit(170, " [more...]"));
             rawMessageTable.AddRow("Value", isValueAvro, valueSchemaId, rawValue.Limit(170, " [more...]"));
 
-            rawMessageTable.WriteWithOptions(title: "Raw Message Preview", color: ConsoleColor.Blue, format: Format.Minimal);
+            rawMessageTable.WriteWithOptions(color: ConsoleColor.Green, format: Format.Minimal);
         }
 
         internal static void PrintAvroSchemas(ISchemaRegistryClient schemaRegistry, int? keySchemaId, int? valueSchemaId)
