@@ -2,7 +2,7 @@
   "profiles": {
     "Kafka.Investigator.Tool": {
       "commandName": "Project",
-      "commandLineArgs": "connection del -n xxx"
+      "commandLineArgs": "consumer start -t topic-avro -c localhost -g teste4 -s DEV"
     }
   }
 }

@@ -81,6 +81,16 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             Console.WriteLine(GetRawValue(message.Value));
         }
 
+        internal static void PrintMessageHeaders(Message<byte[], byte[]> message)
+        {
+            var table = new ConsoleTable("Key", "Value");
+
+            foreach (var item in message.Headers)
+                table.AddRow(item.Key, Encoding.UTF8.GetString(item.GetValueBytes()));
+
+            table.WriteWithOptions(title: "Message Headers", format: Format.Minimal);
+        }
+
         private static string GetRawValue(byte[] messagePart)
         {
             if (messagePart is null)

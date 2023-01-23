@@ -1,7 +1,7 @@
 ﻿using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Kafka.Investigator.Tool.KafkaObjects;
-using System.Net;
+using Kafka.Investigator.Tool.Util;
 
 namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 {
@@ -24,7 +24,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             {
                 using var consumer = CreateConsumer(consumerStartRequest);
 
-                var usingSchemaRegistry = TryCreateSchemaRegistryClient(consumerStartRequest, out ISchemaRegistryClient schemaRegistry);
+                var usingSchemaRegistry = TryCreateSchemaRegistryClient(consumerStartRequest, out ISchemaRegistryClient schemaRegistryClient);
                 if (!usingSchemaRegistry)
                     UserInteractionsHelper.WriteWarning("Consume will continue without schema registry information.");
 
@@ -54,13 +54,13 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
                     ConsumerPrintServices.PrintConsumerResultData(consumerResult);
 
-                    bool isKeyAvro = IsAvroMessage(consumerResult.Message.Key, out int? keySchemaId);
-                    bool isValueAvro = IsAvroMessage(consumerResult.Message.Value, out int? valueSchemaId);
+                    bool isKeyAvro = consumerResult.Message.Key.IsAvro(out int ? keySchemaId);
+                    bool isValueAvro = consumerResult.Message.Value.IsAvro(out int? valueSchemaId);
 
                     ConsumerPrintServices.PrintRawMessagePreview(consumerResult, isKeyAvro, keySchemaId, isValueAvro, valueSchemaId);
 
                     if (usingSchemaRegistry && (isKeyAvro || isValueAvro))
-                        ConsumerPrintServices.PrintAvroSchemas(schemaRegistry, keySchemaId, valueSchemaId);
+                        ConsumerPrintServices.PrintAvroSchemas(schemaRegistryClient, keySchemaId, valueSchemaId);
 
                     // User options
                     ProcessUserOptions(consumer, consumerResult, out bool stopConsumer);
@@ -108,35 +108,6 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             }
         }
 
-        private static bool IsAvroMessage(byte[] messageBytes, out int? schemaId)
-        {
-            // Constant used for AvroSerializer.
-            // https://github.com/confluentinc/confluent-kafka-dotnet/blob/59e0243d8bf6e8456b4c9f853c926cf449e89ac8/src/Confluent.SchemaRegistry.Serdes.Avro/Constants.cs
-            byte MagicByte = 0;
-
-            schemaId = null;
-
-            if (messageBytes == null || messageBytes.Length == 0)
-                return false;
-
-            using (var stream = new MemoryStream(messageBytes))
-            using (var reader = new BinaryReader(stream))
-            {
-                var firstByte = reader.ReadByte();
-
-                if (firstByte != MagicByte)
-                    return false;
-
-                var schemaIdByte = reader.ReadInt32();
-
-                schemaId = IPAddress.NetworkToHostOrder(schemaIdByte);
-
-                return true;
-            }
-
-            return false;
-        }
-
         private static void ConfirmAndCommitMessage(IConsumer<byte[], byte[]> consumer, ConsumeResult<byte[], byte[]> consumerResult)
         {
             if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT?") != "Y")
@@ -160,22 +131,25 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
                 switch (userOption)
                 {
-                    case 1: // Continue consumer
+                    case "N":
                         continueConsuming = true;
                         break;
-                    case 2:
+                    case "K":
                         ConsumerPrintServices.PrintRawMessageKey(consumerResult.Message);
                         break;
-                    case 3:
+                    case "M":
                         ConsumerPrintServices.PrintRawMessageValue(consumerResult.Message);
                         break;
-                    case 4:
+                    case "C":
                         ConfirmAndCommitMessage(consumer, consumerResult);
                         break;
-                    case 5:
+                    case "S":
                         ExportMessageService.ExportMessage(consumerResult.Message);
                         break;
-                    case 6:
+                    case "H":
+                        ConsumerPrintServices.PrintMessageHeaders(consumerResult.Message);
+                        break;
+                    case "E":
                         stopConsumer = true;
                         break;
                 }
@@ -184,27 +158,30 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             return stopConsumer;
         }
 
-        private static int RequestUserOption()
+        private static string RequestUserOption()
         {
-            var validOptions = new[] { "1", "2", "3", "4", "5", "6" };
+            var validOptions = new[] { "N", "K", "M", "H", "C", "S", "E" };
 
             while(true)
             {
                 UserInteractionsHelper.WriteEmptyLine();
                 UserInteractionsHelper.WriteWithColor("===>>> MESSAGE OPTIONS:", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("1 - Continue consuming (without commit)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("2 - View full Message Key", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("3 - View full Message Value", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("4 - Commit message (be careful!)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("5 - Export message (save as file)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("6 - Finish consumer", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("N - Continue consuming (without commit)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("K - Print Key (full)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("M - Print Value (full)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("H - Print Message Headers", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("C - Commit message offset", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("S - Save message (export as file)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("E - Finish consumer", ConsoleColor.Yellow);
 
-                var userOption = Console.ReadLine();
+                var userOption = UserInteractionsHelper.RequestUserResponseKey("Select an option: ", ConsoleColor.Yellow, responseToUpper: true);
+
+                Console.WriteLine();
 
                 if (validOptions.Contains(userOption))
-                    return int.Parse(userOption);
+                    return userOption;
 
-                UserInteractionsHelper.WriteError($"Invalid option: [{userOption}]");
+                UserInteractionsHelper.WriteError($"Invalid option.");
             }
             
         }

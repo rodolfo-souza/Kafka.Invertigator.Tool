@@ -20,12 +20,37 @@
         public static string RequestUserResponse(string question, ConsoleColor? color = null, bool responseToUpper = true)
         {
             WriteWithColor(question, color: color, writeLine: false);
+
             var userResponse = Console.ReadLine();
 
             if (responseToUpper)
                 return userResponse.ToUpper();
             
             return userResponse;
+        }
+
+        public static string RequestUserResponseKey(string text, ConsoleColor? color = null, bool responseToUpper = true)
+        {
+            WriteWithColor(text, color, writeLine: false);
+
+            var userResponse = Console.ReadKey();
+            
+            if (!char.IsLetterOrDigit(userResponse.KeyChar))
+            {
+                WriteEmptyLine();
+                WriteError("Invalid response (enter a letter or digit)");
+
+                RequestUserResponseKey(text, color, responseToUpper);
+            }
+
+            string response = userResponse.KeyChar.ToString();
+
+            if (responseToUpper)
+                return response.ToUpper();
+
+            WriteEmptyLine();
+
+            return response;
         }
 
         public static string RequestYesNoResponse(string question, ConsoleColor? color = ConsoleColor.Yellow, bool responseToUpper = true)

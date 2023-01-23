@@ -27,8 +27,8 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     if (!ConfirmExportEvenOverridden(valueFilePath))
                         return;
 
-                    File.WriteAllBytes(keyFilePath, message.Key);
-                    File.WriteAllBytes(valueFilePath, message.Value);
+                    File.WriteAllBytes(keyFilePath, message.Key ?? new byte[] { });
+                    File.WriteAllBytes(valueFilePath, message.Value ?? new byte[] { });
 
                     UserInteractionsHelper.WriteSuccess($"Message exported sucessfully to: ");
                     UserInteractionsHelper.WriteSuccess(keyFilePath);
@@ -64,7 +64,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
         private static string RequestDestinationDirectory()
         {
             var defaultExportPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-            defaultExportPath = Path.Combine(defaultExportPath, "kafkainvestigator_messages");
+            defaultExportPath = Path.Combine(defaultExportPath, "kafkainvestigator", "saved-messages");
 
             var selectedDirectory = UserInteractionsHelper.RequestInput<string>($"Inform path (default {defaultExportPath})");
 
