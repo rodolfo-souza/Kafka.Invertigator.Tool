@@ -17,12 +17,12 @@ int currentParserLevel = 0;
 Console.ForegroundColor = ConsoleColor.White;
 PrintPresentation(1);
 
-ParseArgumentsWithSubVerbs(args, typeof(ConnectionOptions), 
-                                 typeof(SchemaRegistryOptions), 
-                                 typeof(ConsumerProfileOptions), 
-                                 typeof(ConsumerOptions));
+await ParseArgumentsWithSubVerbsAsync(args, typeof(ConnectionOptions), 
+                                       typeof(SchemaRegistryOptions), 
+                                       typeof(ConsumerProfileOptions), 
+                                       typeof(ConsumerOptions));
 
-void ParseArgumentsWithSubVerbs(string[] args, params Type[] types)
+async Task ParseArgumentsWithSubVerbsAsync(string[] args, params Type[] types)
 {
     currentParserLevel++;
 
@@ -34,7 +34,7 @@ void ParseArgumentsWithSubVerbs(string[] args, params Type[] types)
 
     var parserResult = parser.ParseArguments(args, types);
 
-    parserResult.WithParsed(async selectedOption =>
+    await parserResult.WithParsedAsync(async selectedOption =>
     {
         var selectedOptionType = selectedOption.GetType();
 
@@ -44,9 +44,9 @@ void ParseArgumentsWithSubVerbs(string[] args, params Type[] types)
                                         .ToArray();
 
         if (!subVerbsTypes.Any())
-            await mediator?.Send(selectedOption);
+            await mediator.Send(selectedOption);
         else
-            ParseArgumentsWithSubVerbs(args[1..], subVerbsTypes);
+            await ParseArgumentsWithSubVerbsAsync(args[1..], subVerbsTypes);
     });
 }
 
@@ -69,6 +69,7 @@ void ConfigureServices(IServiceCollection services)
     services.AddSingleton<ConnectionDelInteraction>();
     services.AddSingleton<SchemaRegistryAddInteraction>();
     services.AddSingleton<SchemaRegistryDelInteraction>();
+    services.AddSingleton<SchemaRegistryTestInteraction>();
     services.AddSingleton<ConsumerProfileAddInteraction>();
     services.AddSingleton<ConsumerProfileDelInteraction>();
     services.AddSingleton<ConsumerStartInteraction>();

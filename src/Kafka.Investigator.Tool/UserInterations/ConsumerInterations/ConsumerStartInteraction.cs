@@ -162,11 +162,11 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             {
                 UserInteractionsHelper.WriteEmptyLine();
                 UserInteractionsHelper.WriteWithColor("===>>> MESSAGE OPTIONS:", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("N - Continue consuming (without commit)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("N - Next Message", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("K - Print Key (full)", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("V - Print Value (full)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("H - Print Message Headers", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("M - RePrint Message Preview", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("H - Print Headers", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("M - Message Preview (reprint)", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("R - Print Message Schemas " + schemaRegistryObs, ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("C - Commit message offset", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("S - Save message (export as file)", ConsoleColor.Yellow);
