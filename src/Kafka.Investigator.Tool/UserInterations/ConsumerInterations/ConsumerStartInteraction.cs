@@ -42,11 +42,11 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    ConsumerPrintServices.PrintConsumerCurrentAssignment(consumer);
-
                     UserInteractionsHelper.WriteDebug($"Waiting for new messages from topic [{consumerStartRequest.TopicName}] (timeout {TimeoutSeconds}s)...");
 
                     var consumerResult = consumer.Consume(TimeSpan.FromSeconds(TimeoutSeconds));
+
+                    ConsumerPrintServices.PrintConsumerCurrentAssignment(consumer);
 
                     if (consumerResult == null)
                     {
@@ -131,6 +131,9 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                         ConsumerPrintServices.PrintConsumerResultData(consumerResult);
                         ConsumerPrintServices.PrintRawMessagePreview(consumerResult);
                         break;
+                    case "A":
+                        ConsumerPrintServices.PrintConsumerCurrentAssignment(consumer);
+                        break;
                     case "R":
                         PrintAvroSchemas(consumerResult.Message);
                         break;
@@ -154,7 +157,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
         private string RequestUserOption()
         {
-            var validOptions = new[] { "N", "K", "V", "M", "R" ,"H", "C", "S", "Q" };
+            var validOptions = new[] { "N", "K", "V", "M", "A", "R" ,"H", "C", "S", "Q" };
 
             string schemaRegistryObs = _schemaRegistryClient is null ? $"(disabled: no schema registry selected)" : $"(using schema registry [{_consumerStartRequest.SchemaRegistryName}])";
 
@@ -167,6 +170,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 UserInteractionsHelper.WriteWithColor("V - Print Value (full)", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("H - Print Headers", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("M - Message Preview (reprint)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("A - Print consumer assignment (partitions assigned for this consumer)", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("R - Print Message Schemas " + schemaRegistryObs, ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("C - Commit message offset", ConsoleColor.Yellow);
                 UserInteractionsHelper.WriteWithColor("S - Save message (export as file)", ConsoleColor.Yellow);
