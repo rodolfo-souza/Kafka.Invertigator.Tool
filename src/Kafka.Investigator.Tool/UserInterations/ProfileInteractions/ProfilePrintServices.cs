@@ -8,20 +8,20 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
     {
         internal static void PrintConnections(IReadOnlyList<ConnectionProfile> connections)
         {
-            var consoleTable = new ConsoleTable("Connection", "Default", "Broker", "Username", "SaslMechanism", "SecurityProtocol", "EnableSslCertificateVerification");
+            var consoleTable = new ConsoleTable("Connection", "Default", "Broker", "Username", "Encrypted Password", "SaslMechanism", "SecurityProtocol", "EnableSslCertificateVerification");
 
             foreach (var p in connections)
-                consoleTable.AddRow(p.ConnectionName, p.Default == true ? "***" : "", p.Broker, p.UserName, p.SaslMechanism, p.SecurityProtocol, p.EnableSslCertificateVerification);
+                consoleTable.AddRow(p.ConnectionName, p.Default == true ? "***" : "", p.Broker, p.UserName, p.EncryptedPassword, p.SaslMechanism, p.SecurityProtocol, p.EnableSslCertificateVerification);
 
             consoleTable.WriteWithOptions("Connections List");
         }
 
         internal static void PrintSchemaRegistries(IReadOnlyList<SchemaRegistryProfile> schemaRegistries)
         {
-            var consoleTable = new ConsoleTable("Schema Name", "Default", "Url", "Username");
+            var consoleTable = new ConsoleTable("Schema Name", "Default", "Url", "Username", "Encrypted Password");
 
             foreach (var s in schemaRegistries)
-                consoleTable.AddRow(s.SchemaRegistryName, s.Default == true ? "***" : "", s.Url, s.UserName);
+                consoleTable.AddRow(s.SchemaRegistryName, s.Default == true ? "***" : "", s.Url, s.UserName, s.EncryptedPassword);
 
             consoleTable.WriteWithOptions("Schema Registry List");
         }

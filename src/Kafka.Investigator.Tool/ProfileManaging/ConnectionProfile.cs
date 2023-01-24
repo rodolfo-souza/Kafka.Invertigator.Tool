@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Kafka.Investigator.Tool.Util;
 
 namespace Kafka.Investigator.Tool.ProfileManaging
 {
@@ -14,6 +15,7 @@ namespace Kafka.Investigator.Tool.ProfileManaging
                        string? broker,
                        string? userName,
                        string? password,
+                       bool encryptedPassword = true,
                        SaslMechanism? saslMechanism = null,
                        SecurityProtocol? securityProtocol = null,
                        bool? enableSslCertificateVerification = null)
@@ -23,6 +25,7 @@ namespace Kafka.Investigator.Tool.ProfileManaging
             Broker = broker;
             UserName = userName;
             Password = password;
+            EncryptedPassword = encryptedPassword;
             SaslMechanism = saslMechanism ?? SaslMechanism.Plain;
             SecurityProtocol = securityProtocol ?? SecurityProtocol.SaslSsl;
             EnableSslCertificateVerification = enableSslCertificateVerification ?? true;
@@ -44,10 +47,12 @@ namespace Kafka.Investigator.Tool.ProfileManaging
         public string? Broker { get; set; }
         public string? UserName { get; set; }
         public string? Password { get; set; }
-        //public bool EnableAutoCommit { get; set; } = false;
+        public bool EncryptedPassword { get; set; }
         public SaslMechanism SaslMechanism { get; set; }
         public SecurityProtocol SecurityProtocol { get; set; }
-        //public AutoOffsetReset AutoOffsetReset { get; set; } = AutoOffsetReset.Earliest;
         public bool EnableSslCertificateVerification { get; set; }
+
+        public string GetPlainPassword()
+            => EncryptedPassword ? Password.DecryptForUser() : Password;
     }
 }

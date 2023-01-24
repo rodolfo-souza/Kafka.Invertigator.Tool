@@ -1,6 +1,7 @@
 ﻿using Confluent.Kafka;
 using Kafka.Investigator.Tool.Options.ProfileOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
+using Kafka.Investigator.Tool.Util;
 using MediatR;
 
 namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
@@ -27,18 +28,30 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
             {
                 UserInteractionsHelper.WriteInformation("Add Connection");
                 var connectionName = UserInteractionsHelper.RequestInput<string>("Connection Name (don't use spaces)");
-                var setAsDefaultConnection = UserInteractionsHelper.RequestInput<bool>("Set as default connection? true/false");
+                var setAsDefaultConnection = UserInteractionsHelper.RequestInput<bool>("Set as default connection? [true/false]");
                 var broker = UserInteractionsHelper.RequestInput<string>("Broker");
                 var userName = UserInteractionsHelper.RequestInput<string>("UserName");
                 var password = UserInteractionsHelper.RequestInput<string>("Password");
+                var encryptPassword = UserInteractionsHelper.RequestInput<bool>("Encrypt password? (recommended for production connections) [true/false]");
                 var saslMechanismString = UserInteractionsHelper.RequestInput<string>("SaslMechanism (optional, default: Plain)");
                 var securityProtocolString = UserInteractionsHelper.RequestInput<string>("SecurityProtocol (optional, default: SaslSsl)");
-                var enableSslCertificateVerification = UserInteractionsHelper.RequestInput<bool>("EnableSslCertificateVerification (optional, default: true)");
+                var enableSslCertificateVerification = UserInteractionsHelper.RequestInput<bool>("EnableSslCertificateVerification (optional, default: false)");
 
                 SaslMechanism? saslMechanism = saslMechanismString is null ? null : Enum.Parse<SaslMechanism>(saslMechanismString);
                 SecurityProtocol? securityProtocol = securityProtocolString is null ? null : Enum.Parse<SecurityProtocol>(securityProtocolString);
 
-                var newConnection = new ConnectionProfile(connectionName, setAsDefaultConnection, broker, userName, password, saslMechanism, securityProtocol, enableSslCertificateVerification);
+                if (encryptPassword)
+                    password = password.EncryptForUser();
+
+                var newConnection = new ConnectionProfile(connectionName: connectionName,
+                                                          @default: setAsDefaultConnection,
+                                                          broker: broker,
+                                                          userName: userName,
+                                                          password: password,
+                                                          encryptedPassword: encryptPassword,
+                                                          saslMechanism: saslMechanism,
+                                                          securityProtocol: securityProtocol,
+                                                          enableSslCertificateVerification: enableSslCertificateVerification);
 
                 var existingProfile = _profileRepository.GetConnection(connectionName);
 

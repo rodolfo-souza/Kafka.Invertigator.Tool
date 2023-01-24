@@ -1,5 +1,6 @@
 ﻿using Kafka.Investigator.Tool.Options.ProfileOptions;
 using Kafka.Investigator.Tool.ProfileManaging;
+using Kafka.Investigator.Tool.Util;
 using MediatR;
 
 namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
@@ -30,8 +31,12 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
                 var url = UserInteractionsHelper.RequestInput<string>("Schema Registry Url");
                 var userName = UserInteractionsHelper.RequestInput<string>("UserName");
                 var password = UserInteractionsHelper.RequestInput<string>("Password");
+                var encryptPassword = UserInteractionsHelper.RequestInput<bool>("Encrypt password? (recommended for production connections) [true/false]");
 
-                var schemaRegistryProfile = new SchemaRegistryProfile(schemaRegistryName, setAsDefaultSchemaRegistry, url, userName, password);
+                if (encryptPassword)
+                    password = password.EncryptForUser();
+
+                var schemaRegistryProfile = new SchemaRegistryProfile(schemaRegistryName, setAsDefaultSchemaRegistry, url, userName, password, encryptPassword);
 
                 schemaRegistryProfile.Validate();
 

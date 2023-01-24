@@ -24,7 +24,7 @@ namespace Kafka.Investigator.Tool.KafkaObjects
                 BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo,
                 RequestTimeoutMs = (30 * 1000),
                 Url = schemaProfile.Url,
-                BasicAuthUserInfo = $"{schemaProfile.UserName}:{schemaProfile.Password}"
+                BasicAuthUserInfo = $"{schemaProfile.UserName}:{schemaProfile.GetPlainPassword()}"
             };
             
             if (printSchemaRegistryParameters)

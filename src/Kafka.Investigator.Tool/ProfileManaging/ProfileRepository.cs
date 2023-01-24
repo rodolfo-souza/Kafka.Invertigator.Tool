@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Kafka.Investigator.Tool.ProfileManaging
@@ -138,7 +139,7 @@ namespace Kafka.Investigator.Tool.ProfileManaging
 
             var profilesJson = JsonSerializer.Serialize(_profileSet, GetJsonSerializerOptions());
 
-            if (!Directory.Exists(profilesFullPath))
+            if (!Directory.Exists(Path.GetDirectoryName(profilesFullPath)))
                 Directory.CreateDirectory(Path.GetDirectoryName(profilesFullPath));
 
             File.WriteAllText(profilesFullPath, profilesJson);
@@ -176,7 +177,8 @@ namespace Kafka.Investigator.Tool.ProfileManaging
         {
             var options = new JsonSerializerOptions
             {
-                WriteIndented = true
+                WriteIndented = true,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             };
 
             options.Converters.Add(new JsonStringEnumConverter());

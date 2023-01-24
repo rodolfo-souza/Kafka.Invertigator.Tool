@@ -55,7 +55,7 @@ namespace Kafka.Investigator.Tool.KafkaObjects
         private static ConsumerConfig CreateConsumerConfig(ConnectionProfile connectionProfile, string groupId, AutoOffsetReset autoOffsetReset)
         {
             var userName = string.IsNullOrEmpty(connectionProfile.UserName) ? " " : connectionProfile.UserName;
-            var password = string.IsNullOrEmpty(connectionProfile.Password) ? " " : connectionProfile.Password;
+            var password = string.IsNullOrEmpty(connectionProfile.GetPlainPassword()) ? " " : connectionProfile.GetPlainPassword();
 
             var consumerConfig = new ConsumerConfig()
             {
