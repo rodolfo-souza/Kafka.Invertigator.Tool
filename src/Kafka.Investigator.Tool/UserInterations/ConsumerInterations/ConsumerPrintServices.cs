@@ -49,18 +49,18 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
         internal static void PrintConsumerCurrentAssignment(IConsumer<byte[], byte[]> consumer)
         {
-            var consoleTable = new ConsoleTable("Partition", "Offset");
+            var consoleTable = new ConsoleTable("Partition", "Offset", "Low Offset", "High Offset");
             consoleTable.Options.EnableCount = false;
 
             foreach (var assignment in consumer.Assignment)
             {
                 var watermark = consumer.GetWatermarkOffsets(assignment);
                 var partitionOffset = consumer.Position(assignment);
-                consoleTable.AddRow(assignment.Partition.Value, partitionOffset.Value);
+                consoleTable.AddRow(assignment.Partition.Value, partitionOffset.Value, watermark.Low.Value, watermark.High.Value);
             }
 
             if (!consumer.Assignment.Any())
-                consoleTable.AddRow("[none]", "Waiting for broker (server) assignment...");
+                consoleTable.AddRow("[none]", "Waiting for broker (server) assignment...", "?", "?");
 
             consoleTable.WriteWithOptions(title: "Current consumer assignment", format: Format.Minimal);
         }
@@ -130,6 +130,30 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 return "<null>";
 
             return Encoding.UTF8.GetString(messagePart);
+        }
+        internal static void PrintTopicPartitions(IConsumer<byte[], byte[]> consumer)
+        {
+            try
+            {
+                var topicPartitions = consumer.QueryWatermarkOffsetsAllPartitions();
+
+                if (topicPartitions == null || topicPartitions.Count == 0)
+                {
+                    UserInteractionsHelper.WriteError($"No partitions found for topic [{consumer.Subscription.FirstOrDefault()}]. Check if topic name is correct.");
+                    return;
+                }
+
+                var table = new ConsoleTable("Partition", "Low offset", "Hight offset");
+
+                foreach (var keyPartition in topicPartitions.Keys)
+                    table.AddRow(keyPartition.Partition.Value, topicPartitions[keyPartition].Low, topicPartitions[keyPartition].High);
+
+                table.WriteWithOptions(title: $"Partitions of topic [{consumer.Subscription.FirstOrDefault()}]", format: Format.Minimal);
+            }
+            catch (Exception ex)
+            {
+                UserInteractionsHelper.WriteError("Error trying to print topic partitions: " + ex.Message);
+            }
         }
 
         private static string GetSchema(ISchemaRegistryClient schemaRegistry, int schemaId)

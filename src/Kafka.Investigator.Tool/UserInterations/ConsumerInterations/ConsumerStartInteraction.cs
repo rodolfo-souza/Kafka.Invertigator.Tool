@@ -32,15 +32,9 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 if (!usingSchemaRegistry)
                     UserInteractionsHelper.WriteWarning("Consume will continue without schema registry information.");
 
-                if (UserInteractionsHelper.RequestYesNoResponse("Start reading messages?") != "Y")
-                { 
-                    UserInteractionsHelper.WriteWarning("Operation aborted.");
-                    return;
-                }
-                
-                UserInteractionsHelper.WriteSuccess("Starting consumer...");
+                var nextAction = InteractWithUser(Menu.ConsumerOptions, consumer, beforeStart: true, consumeResult: null);
 
-                while (!cancellationToken.IsCancellationRequested)
+                while (nextAction != ConsumerAction.StopConsume && !cancellationToken.IsCancellationRequested)
                 {
                     UserInteractionsHelper.WriteDebug($"Waiting for new messages from topic [{consumerStartRequest.TopicName}] (timeout {TimeoutSeconds}s)...");
 
@@ -51,6 +45,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     if (consumerResult == null)
                     {
                         UserInteractionsHelper.WriteWarning("Nothing returned from broker.");
+                        nextAction = InteractWithUser(Menu.ConsumerOptions, consumer, beforeStart: false, consumeResult: null);
                         continue;
                     }
 
@@ -59,10 +54,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     ConsumerPrintServices.PrintRawMessagePreview(consumerResult);
 
                     // User options
-                    ProcessUserOptions(consumer, consumerResult, out bool stopConsumer);
-
-                    if (stopConsumer)
-                        break;
+                    nextAction = InteractWithUser(Menu.MessageOptions, consumer, beforeStart: false, consumeResult: consumerResult);
                 }
 
                 UserInteractionsHelper.WriteInformation("Consumer finished");
@@ -95,86 +87,104 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             }
         }
 
-        private static void ConfirmAndCommitMessage(IConsumer<byte[], byte[]> consumer, ConsumeResult<byte[], byte[]> consumerResult)
+        private ConsumerAction InteractWithUser(Menu startMenu, IConsumer<byte[], byte[]> consumer, bool beforeStart, ConsumeResult<byte[], byte[]>? consumeResult)
         {
-            if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT?") != "Y")
+            ConsumerAction? consumerAction;
+
+            try
             {
-                UserInteractionsHelper.WriteWarning("Commit aborted");
-                return;
-            }
-
-            consumer.Commit(consumerResult);
-            UserInteractionsHelper.WriteSuccess("Message commited.");
-        }
-
-        private bool ProcessUserOptions(IConsumer<byte[], byte[]> consumer, ConsumeResult<byte[], byte[]> consumerResult, out bool stopConsumer)
-        {
-            stopConsumer = false;
-            bool continueConsuming = false;
-
-            while (!stopConsumer && !continueConsuming)
-            {
-                var userOption = RequestUserOption();
-
-                switch (userOption)
+                switch (startMenu)
                 {
-                    case "N":
-                        continueConsuming = true;
+                    case Menu.ConsumerOptions:
+                        var consumerOption = RequestConsumerOptions(consumeResult != null, beforeStart);
+
+                        consumerAction = TranslateConsumerAction(consumerOption);
+
+                        if (consumerAction == ConsumerAction.MessageMenu)
+                            InteractWithUser(Menu.MessageOptions, consumer, beforeStart, consumeResult);
+
+                        if (consumerAction != null)
+                            return consumerAction.Value;
+
+                        ProcessConsumerOption(consumerOption, consumer);
                         break;
-                    case "K":
-                        ConsumerPrintServices.PrintRawMessageKey(consumerResult.Message);
+
+                    case Menu.MessageOptions:
+                        var messageOption = RequestMessageOptions();
+
+                        consumerAction = TranslateConsumerAction(messageOption);
+
+                        if (consumerAction == ConsumerAction.ConsumerMenu)
+                            InteractWithUser(Menu.ConsumerOptions, consumer, beforeStart, consumeResult);
+
+                        if (consumerAction != null)
+                            return consumerAction.Value;
+
+                        ProcessMessageOption(messageOption, consumer, consumeResult);
+
                         break;
-                    case "V":
-                        ConsumerPrintServices.PrintRawMessageValue(consumerResult.Message);
-                        break;
-                    case "M":
-                        ConsumerPrintServices.PrintConsumerResultData(consumerResult);
-                        ConsumerPrintServices.PrintRawMessagePreview(consumerResult);
-                        break;
-                    case "A":
-                        ConsumerPrintServices.PrintConsumerCurrentAssignment(consumer);
-                        break;
-                    case "R":
-                        PrintAvroSchemas(consumerResult.Message);
-                        break;
-                    case "C":
-                        ConfirmAndCommitMessage(consumer, consumerResult);
-                        break;
-                    case "S":
-                        ExportMessageService.ExportMessage(consumerResult.Message);
-                        break;
-                    case "H":
-                        ConsumerPrintServices.PrintMessageHeaders(consumerResult.Message);
-                        break;
-                    case "Q":
-                        stopConsumer = true;
+                    default:
                         break;
                 }
             }
+            catch (Exception ex)
+            {
+                UserInteractionsHelper.WriteError(ex.Message);
+            }
 
-            return stopConsumer;
+            // Show menu again.
+            return InteractWithUser(startMenu, consumer, beforeStart, consumeResult);
         }
 
-        private string RequestUserOption()
+        private static ConsumerAction? TranslateConsumerAction(string userOption)
         {
-            var validOptions = new[] { "N", "K", "V", "M", "A", "R" ,"H", "C", "S", "Q" };
+            switch (userOption)
+            {
+                case "Q":
+                    return ConsumerAction.StopConsume;
+                case "M":
+                    return ConsumerAction.MessageMenu;
+                case "B":
+                    return ConsumerAction.ConsumerMenu;
+                case "N":
+                    return ConsumerAction.ContineConsume;
+                default:
+                    return null;
+            }
+        }
+
+        private string RequestConsumerOptions(bool offerBackMessageOptions, bool beforeFirstConsume)
+        {
+            List<string> validOptions = new() { "N", "A", "P", "Q" };
+
+            if (!beforeFirstConsume)
+                validOptions.AddRange(new[] { "F", "E" });
+
+            if (offerBackMessageOptions)
+                validOptions.Add("M");
 
             string schemaRegistryObs = _schemaRegistryClient is null ? $"(disabled: no schema registry selected)" : $"(using schema registry [{_consumerStartRequest.SchemaRegistryName}])";
 
             while (true)
             {
                 UserInteractionsHelper.WriteEmptyLine();
-                UserInteractionsHelper.WriteWithColor("===>>> MESSAGE OPTIONS:", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("N - Next Message", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("K - Print Key (full)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("V - Print Value (full)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("H - Print Headers", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("M - Message Preview (reprint)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("A - Print consumer assignment (partitions assigned for this consumer)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("R - Print Message Schemas " + schemaRegistryObs, ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("C - Commit message offset", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("S - Save message (export as file)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("Q - Quit (stop consumer)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("===>>> CONSUMER OPTIONS:", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[N] - Next Message (consume with current assignment)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[A] - Print current Assignment", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[P] - Print Topic Partitions ", ConsoleColor.Yellow);
+
+                if (!beforeFirstConsume)
+                {
+                    UserInteractionsHelper.WriteWithColor("[F] - Force All Partitions Assignment", ConsoleColor.Yellow);
+                    UserInteractionsHelper.WriteWithColor("[E] - Force Earliest Consume (also force all partitions assignment)", ConsoleColor.Yellow);
+                }
+
+                if (offerBackMessageOptions)
+                {
+                    UserInteractionsHelper.WriteWithColor("[M] - Back to Message Options", ConsoleColor.Yellow);
+                }
+
+                UserInteractionsHelper.WriteWithColor("[Q] - Quit (stop consumer)", ConsoleColor.Yellow);
 
                 var userOption = UserInteractionsHelper.RequestUserResponseKey("Select an option: ", ConsoleColor.Yellow, responseToUpper: true);
 
@@ -185,7 +195,107 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
                 UserInteractionsHelper.WriteError($"Invalid option.");
             }
-            
+        }
+
+        private static void ProcessConsumerOption(string userOption, IConsumer<byte[], byte[]> consumer)
+        {
+            switch (userOption)
+            {
+                case "A":
+                    ConsumerPrintServices.PrintConsumerCurrentAssignment(consumer);
+                    break;
+                case "P":
+                    ConsumerPrintServices.PrintTopicPartitions(consumer);
+                    break;
+                case "F":
+                    consumer.AssignAllPartitions();
+                    UserInteractionsHelper.WriteSuccess("Force Assignment OK. Request Next message to refresh Offsets.");
+                    ConsumerPrintServices.PrintConsumerCurrentAssignment(consumer);
+                    break;
+                case "E":
+                    consumer.ForceConsumeEarliest();
+                    UserInteractionsHelper.WriteSuccess("Force Earliest consume OK. Request Next message to refresh Offsets.");
+                    break;
+                default:
+                    throw new NotImplementedException("Consumer option not implemented: " + userOption);
+            }
+        }
+
+        private string RequestMessageOptions()
+        {
+            var validOptions = new[] { "N", "K", "V", "M", "A", "R", "H", "C", "S", "O", "B", "Q" };
+
+            string schemaRegistryObs = _schemaRegistryClient is null ? $"(disabled: no schema registry selected)" : $"(using schema registry [{_consumerStartRequest.SchemaRegistryName}])";
+
+            while (true)
+            {
+                UserInteractionsHelper.WriteEmptyLine();
+                UserInteractionsHelper.WriteWithColor("===>>> MESSAGE OPTIONS:", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[N] - Next Message (consume with current assignment)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[K] - Print Key (full)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[V] - Print Value (full)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[H] - Print Headers", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[M] - Message Preview (reprint)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[A] - Print current assignment (partitions assigned for this consumer)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[R] - Print Message Schemas " + schemaRegistryObs, ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[C] - Commit message offset", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[S] - Save message (export as file)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[B] - Back to Consumer Options", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[Q] - Quit (stop consumer)", ConsoleColor.Yellow);
+
+                var userOption = UserInteractionsHelper.RequestUserResponseKey("Select an option: ", ConsoleColor.Yellow, responseToUpper: true);
+
+                Console.WriteLine();
+
+                if (validOptions.Contains(userOption))
+                    return userOption;
+
+                UserInteractionsHelper.WriteError($"Invalid option.");
+            }
+        }
+
+        private void ProcessMessageOption(string userOption, IConsumer<byte[], byte[]> consumer, ConsumeResult<byte[], byte[]>? consumerResult)
+        {
+            switch (userOption)
+            {
+                case "K":
+                    ConsumerPrintServices.PrintRawMessageKey(consumerResult.Message);
+                    break;
+                case "V":
+                    ConsumerPrintServices.PrintRawMessageValue(consumerResult.Message);
+                    break;
+                case "M":
+                    ConsumerPrintServices.PrintConsumerResultData(consumerResult);
+                    ConsumerPrintServices.PrintRawMessagePreview(consumerResult);
+                    break;
+                case "A":
+                    ConsumerPrintServices.PrintConsumerCurrentAssignment(consumer);
+                    break;
+                case "R":
+                    PrintAvroSchemas(consumerResult.Message);
+                    break;
+                case "C":
+                    ConfirmAndCommitMessage(consumer, consumerResult);
+                    break;
+                case "S":
+                    ExportMessageService.ExportMessage(consumerResult.Message);
+                    break;
+                case "H":
+                    ConsumerPrintServices.PrintMessageHeaders(consumerResult.Message);
+                    break;
+            }
+        }
+
+        private static void ConfirmAndCommitMessage(IConsumer<byte[], byte[]> consumer, ConsumeResult<byte[], byte[]> consumerResult)
+        {
+            if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT?") != "Y")
+            {
+                UserInteractionsHelper.WriteWarning("Commit aborted");
+                return;
+            }
+
+            consumer.Commit(consumerResult);
+            UserInteractionsHelper.WriteSuccess("Message commited.");
         }
 
         private void PrintAvroSchemas(Message<byte[], byte[]> message)
@@ -207,5 +317,19 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
             ConsumerPrintServices.PrintAvroSchemas(_schemaRegistryClient, keySchemaId, valueSchemaId);
         }
+    }
+
+    internal enum Menu
+    {
+        ConsumerOptions,
+        MessageOptions
+    }
+
+    internal enum ConsumerAction
+    {
+        ContineConsume,
+        StopConsume,
+        ConsumerMenu,
+        MessageMenu
     }
 }
