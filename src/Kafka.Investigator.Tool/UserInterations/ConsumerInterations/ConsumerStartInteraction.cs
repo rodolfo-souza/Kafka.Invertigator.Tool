@@ -2,6 +2,7 @@
 using Confluent.SchemaRegistry;
 using Kafka.Investigator.Tool.KafkaObjects;
 using Kafka.Investigator.Tool.Util;
+using Polly;
 
 namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 {
@@ -13,7 +14,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
         private ISchemaRegistryClient _schemaRegistryClient = null;
         private ConsumerStartRequest _consumerStartRequest = null;
 
-        private const int TimeoutSeconds = 10;
+        private const int TimeoutSeconds = 3;
 
         public ConsumerStartInteraction(InvestigatorConsumerBuilder consumerBuilder, InvestigatorSchemaRegistryBuilder schemaRegistryBuilder)
         {
@@ -34,7 +35,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
                 var nextAction = InteractWithUser(Menu.ConsumerOptions, consumer, beforeStart: true, consumeResult: null);
 
-                while (nextAction != ConsumerAction.StopConsume && !cancellationToken.IsCancellationRequested)
+                while (nextAction != NagigationAction.StopConsume && !cancellationToken.IsCancellationRequested)
                 {
                     UserInteractionsHelper.WriteDebug($"Waiting for new messages from topic [{consumerStartRequest.TopicName}] (timeout {TimeoutSeconds}s)...");
 
@@ -48,6 +49,8 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                         nextAction = InteractWithUser(Menu.ConsumerOptions, consumer, beforeStart: false, consumeResult: null);
                         continue;
                     }
+
+                    consumer.StoreOffset(consumerResult);
 
                     ConsumerPrintServices.PrintConsumerResultData(consumerResult);
 
@@ -87,9 +90,9 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             }
         }
 
-        private ConsumerAction InteractWithUser(Menu startMenu, IConsumer<byte[], byte[]> consumer, bool beforeStart, ConsumeResult<byte[], byte[]>? consumeResult)
+        private NagigationAction InteractWithUser(Menu startMenu, IConsumer<byte[], byte[]> consumer, bool beforeStart, ConsumeResult<byte[], byte[]>? consumeResult)
         {
-            ConsumerAction? consumerAction;
+            NagigationAction? navigationAction;
 
             try
             {
@@ -98,27 +101,27 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     case Menu.ConsumerOptions:
                         var consumerOption = RequestConsumerOptions(consumeResult != null, beforeStart);
 
-                        consumerAction = TranslateConsumerAction(consumerOption);
+                        navigationAction = ContainsNavigationAction(consumerOption);
 
-                        if (consumerAction == ConsumerAction.MessageMenu)
-                            InteractWithUser(Menu.MessageOptions, consumer, beforeStart, consumeResult);
+                        if (navigationAction == NagigationAction.MessageMenu)
+                            return InteractWithUser(Menu.MessageOptions, consumer, beforeStart, consumeResult);
 
-                        if (consumerAction != null)
-                            return consumerAction.Value;
+                        if (navigationAction != null)
+                            return navigationAction.Value;
 
                         ProcessConsumerOption(consumerOption, consumer);
                         break;
 
                     case Menu.MessageOptions:
-                        var messageOption = RequestMessageOptions();
+                        var messageOption = RequestMessageOptions(consumeResult);
 
-                        consumerAction = TranslateConsumerAction(messageOption);
+                        navigationAction = ContainsNavigationAction(messageOption);
 
-                        if (consumerAction == ConsumerAction.ConsumerMenu)
-                            InteractWithUser(Menu.ConsumerOptions, consumer, beforeStart, consumeResult);
+                        if (navigationAction == NagigationAction.ConsumerMenu)
+                            return InteractWithUser(Menu.ConsumerOptions, consumer, beforeStart, consumeResult);
 
-                        if (consumerAction != null)
-                            return consumerAction.Value;
+                        if (navigationAction != null)
+                            return navigationAction.Value;
 
                         ProcessMessageOption(messageOption, consumer, consumeResult);
 
@@ -136,18 +139,18 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             return InteractWithUser(startMenu, consumer, beforeStart, consumeResult);
         }
 
-        private static ConsumerAction? TranslateConsumerAction(string userOption)
+        private static NagigationAction? ContainsNavigationAction(string userOption)
         {
             switch (userOption)
             {
                 case "Q":
-                    return ConsumerAction.StopConsume;
+                    return NagigationAction.StopConsume;
                 case "M":
-                    return ConsumerAction.MessageMenu;
+                    return NagigationAction.MessageMenu;
                 case "B":
-                    return ConsumerAction.ConsumerMenu;
+                    return NagigationAction.ConsumerMenu;
                 case "N":
-                    return ConsumerAction.ContineConsume;
+                    return NagigationAction.ContineConsume;
                 default:
                     return null;
             }
@@ -158,7 +161,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             List<string> validOptions = new() { "N", "A", "P", "Q" };
 
             if (!beforeFirstConsume)
-                validOptions.AddRange(new[] { "F", "E" });
+                validOptions.AddRange(new[] { "C", "F", "E" });
 
             if (offerBackMessageOptions)
                 validOptions.Add("M");
@@ -168,25 +171,26 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             while (true)
             {
                 UserInteractionsHelper.WriteEmptyLine();
-                UserInteractionsHelper.WriteWithColor("===>>> CONSUMER OPTIONS:", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[N] - Next Message (consume with current assignment)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[A] - Print current Assignment", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[P] - Print Topic Partitions ", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("===>>> CONSUMER OPTIONS:", ConsoleColor.DarkYellow);
+                UserInteractionsHelper.WriteWithColor("[N] - Next Message (consume with current assignment)", ConsoleColor.DarkYellow);
+                UserInteractionsHelper.WriteWithColor("[A] - Print current Assignment", ConsoleColor.DarkYellow);
+                UserInteractionsHelper.WriteWithColor("[P] - Print Topic Partitions ", ConsoleColor.DarkYellow);
 
                 if (!beforeFirstConsume)
                 {
-                    UserInteractionsHelper.WriteWithColor("[F] - Force All Partitions Assignment", ConsoleColor.Yellow);
-                    UserInteractionsHelper.WriteWithColor("[E] - Force Earliest Consume (also force all partitions assignment)", ConsoleColor.Yellow);
+                    UserInteractionsHelper.WriteWithColor("[C] - Commit Current Assignment (ATENTION: print current assignment to see all partitions and offsets)", ConsoleColor.DarkYellow);
+                    UserInteractionsHelper.WriteWithColor("[F] - Force All Partitions Assignment", ConsoleColor.DarkYellow);
+                    UserInteractionsHelper.WriteWithColor("[E] - Force Earliest Consume (also force all partitions assignment)", ConsoleColor.DarkYellow);
                 }
 
                 if (offerBackMessageOptions)
                 {
-                    UserInteractionsHelper.WriteWithColor("[M] - Back to Message Options", ConsoleColor.Yellow);
+                    UserInteractionsHelper.WriteWithColor("[M] - Back to Message Options", ConsoleColor.DarkYellow);
                 }
 
-                UserInteractionsHelper.WriteWithColor("[Q] - Quit (stop consumer)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor("[Q] - Quit (stop consumer)", ConsoleColor.DarkYellow);
 
-                var userOption = UserInteractionsHelper.RequestUserResponseKey("Select an option: ", ConsoleColor.Yellow, responseToUpper: true);
+                var userOption = UserInteractionsHelper.RequestUserResponseKey("Select an option: ", ConsoleColor.DarkYellow, responseToUpper: true);
 
                 Console.WriteLine();
 
@@ -207,6 +211,9 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 case "P":
                     ConsumerPrintServices.PrintTopicPartitions(consumer);
                     break;
+                case "C":
+                    ConfirmAndCommitAssignment(consumer);
+                    break;
                 case "F":
                     consumer.AssignAllPartitions();
                     UserInteractionsHelper.WriteSuccess("Force Assignment OK. Request Next message to refresh Offsets.");
@@ -214,14 +221,14 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     break;
                 case "E":
                     consumer.ForceConsumeEarliest();
-                    UserInteractionsHelper.WriteSuccess("Force Earliest consume OK. Request Next message to refresh Offsets.");
+                    UserInteractionsHelper.WriteSuccess("Force Earliest consume OK. Request Next message to refresh Offsets. ATENTION: This action was not commited in Broker. If you want to commit the Earliest offset, use COMMIT option.");
                     break;
                 default:
                     throw new NotImplementedException("Consumer option not implemented: " + userOption);
             }
         }
 
-        private string RequestMessageOptions()
+        private string RequestMessageOptions(ConsumeResult<byte[], byte[]> consumeResult)
         {
             var validOptions = new[] { "N", "K", "V", "M", "A", "R", "H", "C", "S", "O", "B", "Q" };
 
@@ -230,18 +237,18 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             while (true)
             {
                 UserInteractionsHelper.WriteEmptyLine();
-                UserInteractionsHelper.WriteWithColor("===>>> MESSAGE OPTIONS:", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[N] - Next Message (consume with current assignment)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[K] - Print Key (full)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[V] - Print Value (full)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[H] - Print Headers", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[M] - Message Preview (reprint)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[A] - Print current assignment (partitions assigned for this consumer)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[R] - Print Message Schemas " + schemaRegistryObs, ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[C] - Commit message offset", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[S] - Save message (export as file)", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[B] - Back to Consumer Options", ConsoleColor.Yellow);
-                UserInteractionsHelper.WriteWithColor("[Q] - Quit (stop consumer)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"===>>> MESSAGE OPTIONS:", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[N] - Next Message (consume with current assignment)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[K] - Print Key (full)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[V] - Print Value (full)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[H] - Print Headers", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[M] - Message Preview (reprint)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[A] - Print current assignment (partitions assigned for this consumer)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[R] - Print Message Schemas " + schemaRegistryObs, ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[C] - Commit message (partition {consumeResult.Partition.Value}, offset {consumeResult.Offset.Value})", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[S] - Save message (export as file)", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[B] - Back to Consumer Options", ConsoleColor.Yellow);
+                UserInteractionsHelper.WriteWithColor($"[Q] - Quit (stop consumer)", ConsoleColor.Yellow);
 
                 var userOption = UserInteractionsHelper.RequestUserResponseKey("Select an option: ", ConsoleColor.Yellow, responseToUpper: true);
 
@@ -286,16 +293,51 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             }
         }
 
+        private static void ConfirmAndCommitAssignment(IConsumer<byte[], byte[]> consumer)
+        {
+            try
+            {
+                if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT? ATENTION: this will commit all partitions and offsets for current assignment.") != "Y")
+                {
+                    UserInteractionsHelper.WriteWarning("Commit aborted");
+                    return;
+                }
+
+                var retryPolicy = Policy.Handle<Exception>(e => e.Message.Contains("Group rebalance in progress") ||
+                                                                e.Message.Contains("Unknown member"))
+                                        .WaitAndRetry(retryCount: 3,
+                                                      sleepDurationProvider: (attempt) => TimeSpan.FromSeconds(attempt),
+                                                      onRetry: (ex, retryCount) => UserInteractionsHelper.WriteError($"{ex.Message} - retrying..."));
+
+                retryPolicy.Execute(() => consumer.Commit());
+
+                UserInteractionsHelper.WriteSuccess("Current assignemt commited.");
+            }
+            catch (Exception ex)
+            {
+                UserInteractionsHelper.WriteError(ex.Message);
+                UserInteractionsHelper.WriteError("*** This might be a bug from Confluent.Kafka library. Try restart Kafka.Investigator and retry operation.");
+            }
+        }
+
         private static void ConfirmAndCommitMessage(IConsumer<byte[], byte[]> consumer, ConsumeResult<byte[], byte[]> consumerResult)
         {
-            if (UserInteractionsHelper.RequestYesNoResponse("Confirm COMMIT?") != "Y")
+            try
             {
-                UserInteractionsHelper.WriteWarning("Commit aborted");
-                return;
-            }
+                if (UserInteractionsHelper.RequestYesNoResponse($"Confirm COMMIT? (only partitoin {consumerResult.Partition.Value} offset {consumerResult.Offset})") != "Y")
+                {
+                    UserInteractionsHelper.WriteWarning("Commit aborted");
+                    return;
+                }
 
-            consumer.Commit(consumerResult);
-            UserInteractionsHelper.WriteSuccess("Message commited.");
+                consumer.Commit(consumerResult);
+
+                UserInteractionsHelper.WriteSuccess("Message commited.");
+            }
+            catch (Exception ex)
+            {
+                UserInteractionsHelper.WriteError(ex.Message);
+            }
         }
 
         private void PrintAvroSchemas(Message<byte[], byte[]> message)
@@ -325,7 +367,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
         MessageOptions
     }
 
-    internal enum ConsumerAction
+    internal enum NagigationAction
     {
         ContineConsume,
         StopConsume,

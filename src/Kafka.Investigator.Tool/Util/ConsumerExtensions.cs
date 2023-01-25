@@ -99,14 +99,19 @@ namespace Kafka.Investigator.Tool.Util
                 if (allPartitions == null || allPartitions.Count == 0)
                     throw new Exception($"There's no partition to assign in topic [{consumer.Subscription.FirstOrDefault()}]. Check if the topic name is correct.");
 
-                var zeroOffsets = allPartitions.Select(x => new TopicPartitionOffset(x.Key, new Offset(x.Value.Low)));
+                var earliestPartitionOffsets = allPartitions.Select(x => new TopicPartitionOffset(x.Key, new Offset(x.Value.Low)));
 
-                consumer.AssignAllPartitions();
-                consumer.Assign(zeroOffsets);
+                
+                consumer.Assign(earliestPartitionOffsets);
+
+                foreach (var earliestPartitionOffset in earliestPartitionOffsets)
+                {
+                    consumer.StoreOffset(earliestPartitionOffset);
+                }
             }
             catch (Exception ex)
             {
-                throw new Exception("Error trying to assign all partitions: " + ex.Message);
+                throw new Exception("Error trying to force consume earliest: " + ex.Message);
             }
         }
     }

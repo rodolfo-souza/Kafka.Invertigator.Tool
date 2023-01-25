@@ -77,9 +77,10 @@ namespace Kafka.Investigator.Tool.KafkaObjects
                 TopicMetadataRefreshIntervalMs = 180000,
                 MetadataMaxAgeMs = 210000,
                 SocketTimeoutMs = 30000,
-                EnableAutoCommit = false,
+                EnableAutoCommit = false, //!!!!!!!!!
                 Acks = Acks.All,
-                EnableAutoOffsetStore = true,
+                EnableAutoOffsetStore = false,
+                AutoCommitIntervalMs = 10,
                 BrokerAddressFamily = BrokerAddressFamily.V4,
                 SocketKeepaliveEnable = true,
             };

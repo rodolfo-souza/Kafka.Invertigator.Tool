@@ -49,7 +49,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
 
         internal static void PrintConsumerCurrentAssignment(IConsumer<byte[], byte[]> consumer)
         {
-            var consoleTable = new ConsoleTable("Partition", "Offset", "Low Offset", "High Offset");
+            var consoleTable = new ConsoleTable("Partition", "Consumer Offset", "Low Offset", "High Offset");
             consoleTable.Options.EnableCount = false;
 
             foreach (var assignment in consumer.Assignment)
