@@ -161,7 +161,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
             List<string> validOptions = new() { "N", "A", "P", "Q" };
 
             if (!beforeFirstConsume)
-                validOptions.AddRange(new[] { "C", "F", "E" });
+                validOptions.AddRange(new[] { "C", "F", "E", "T" });
 
             if (offerBackMessageOptions)
                 validOptions.Add("M");
@@ -181,6 +181,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                     UserInteractionsHelper.WriteWithColor("[C] - Commit Current Assignment (ATENTION: print current assignment to see all partitions and offsets)", ConsoleColor.DarkYellow);
                     UserInteractionsHelper.WriteWithColor("[F] - Force All Partitions Assignment", ConsoleColor.DarkYellow);
                     UserInteractionsHelper.WriteWithColor("[E] - Force Earliest Consume (also force all partitions assignment)", ConsoleColor.DarkYellow);
+                    UserInteractionsHelper.WriteWithColor("[T] - Force Consume By Time (also force all partitions assignment)", ConsoleColor.DarkYellow);
                 }
 
                 if (offerBackMessageOptions)
@@ -222,6 +223,11 @@ namespace Kafka.Investigator.Tool.UserInterations.ConsumerInterations
                 case "E":
                     consumer.ForceConsumeEarliest();
                     UserInteractionsHelper.WriteSuccess("Force Earliest consume OK. Request Next message to refresh Offsets. ATENTION: This action was not commited in Broker. If you want to commit the Earliest offset, use COMMIT option.");
+                    break;
+                case "T":
+                    var datetime = UserInteractionsHelper.RequestInput<DateTime>("Datetime (yyyy-MM-dd HH:mm:ss)");
+                    consumer.ForceConsumeByTime(datetime);
+                    UserInteractionsHelper.WriteSuccess($"Force consume from {datetime:yyyy-MM-dd HH:mm:ss} OK. Request Next message to refresh Offsets. ATENTION: This action was not commited in Broker. If you want to commit the Earliest offset, use COMMIT option.");
                     break;
                 default:
                     throw new NotImplementedException("Consumer option not implemented: " + userOption);

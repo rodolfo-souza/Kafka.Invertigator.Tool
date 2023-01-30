@@ -114,5 +114,24 @@ namespace Kafka.Investigator.Tool.Util
                 throw new Exception("Error trying to force consume earliest: " + ex.Message);
             }
         }
+
+        public static void ForceConsumeByTime<TKey, TValue>(this IConsumer<TKey, TValue> consumer, DateTime dateTime)
+        {
+            try
+            {
+                var offsetsByTime = GetOffsetsByTime(consumer, dateTime);
+
+                consumer.Assign(offsetsByTime);
+
+                foreach (var offsetByTime in offsetsByTime)
+                {
+                    consumer.StoreOffset(offsetByTime);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error trying to force consume by time: " + ex.Message);
+            }
+        }
     }
 }

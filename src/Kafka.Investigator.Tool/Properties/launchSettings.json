@@ -2,7 +2,8 @@
   "profiles": {
     "Kafka.Investigator.Tool": {
       "commandName": "Project",
-      "commandLineArgs": "consumer start -t topic-avro -c localhost -g teste4 -s DEV"
+      //"commandLineArgs": "consumer start-profile -p hml-Teste"
+      "commandLineArgs": "consumer start -t topico-teste-2 -c localhost -g teste000"
     }
   }
 }
