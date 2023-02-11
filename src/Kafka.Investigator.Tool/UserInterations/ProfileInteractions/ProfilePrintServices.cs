@@ -13,7 +13,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
             foreach (var p in connections)
                 consoleTable.AddRow(p.ConnectionName, p.Default == true ? "***" : "", p.Broker, p.UserName, p.EncryptedPassword, p.SaslMechanism, p.SecurityProtocol, p.EnableSslCertificateVerification);
 
-            consoleTable.WriteWithOptions("Connections List");
+            consoleTable.WriteWithOptions("Connections List", format: Format.Minimal);
         }
 
         internal static void PrintSchemaRegistries(IReadOnlyList<SchemaRegistryProfile> schemaRegistries)
@@ -23,7 +23,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
             foreach (var s in schemaRegistries)
                 consoleTable.AddRow(s.SchemaRegistryName, s.Default == true ? "***" : "", s.Url, s.UserName, s.EncryptedPassword);
 
-            consoleTable.WriteWithOptions("Schema Registry List");
+            consoleTable.WriteWithOptions("Schema Registry List", format: Format.Minimal);
         }
 
         internal static void PrintConsumerProfiles(IReadOnlyList<ConsumerProfile> consumerProfiles)
@@ -33,7 +33,7 @@ namespace Kafka.Investigator.Tool.UserInterations.ProfileInteractions
             foreach (var c in consumerProfiles)
                 consoleTable.AddRow(c.ConsumerName, c.ConnectionName, c.TopicName, c.GroupId, c.AutoOffsetReset, c.UseSchemaRegistry, c.SchemaRegistryName);
 
-            consoleTable.WriteWithOptions("Consumer Profile List");
+            consoleTable.WriteWithOptions("Consumer Profile List", format: Format.Minimal);
         }
     }
 }
